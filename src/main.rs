@@ -37,9 +37,14 @@ fn main() {
 
     let pos = ChunkPos {x: 0, y: 0, z: 0};
     world.load_chunk(pos, &mut master);
-    let pos = ChunkPos {x: 32, y: 0, z: 0};
+    world.update_chunk_buffer(&mut master, pos);
+
+    let pos = ChunkPos {x: 0, y: 0, z: 1};
     world.load_chunk(pos, &mut master);
+    world.update_chunk_buffer(&mut master, pos);
     
+    let pos = ChunkPos {x: 1, y: 0, z: 1};
+    world.load_chunk(pos, &mut master);
     world.update_chunk_buffer(&mut master, pos);
 
     event_loop.run(move |event, _, control_flow| {

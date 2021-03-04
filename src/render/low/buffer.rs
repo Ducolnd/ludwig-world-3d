@@ -89,6 +89,7 @@ impl<T: bytemuck::Pod + bytemuck::Zeroable> DynamicBuffer<T> {
     ) {
         if data.len() + self.len > self.size {
             self.resize((data.len() + self.len) * 2, device, encoder); // Resize twice as much as is needed
+            println!("Resized");
         }
 
         let to_add_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {

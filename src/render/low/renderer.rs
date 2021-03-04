@@ -7,8 +7,7 @@ use crate::render::low::{
     vertex,
     textures::TextureManager,
     uniforms::Uniform,
-    uniforms::ChunkPositionUniform,
-    uniforms::CameraUniform,
+    uniforms::{ChunkPositionUniform, CameraUniform, MultiUniform},
     buffer::DynamicBuffer,
 };
 use crate::world::chunk::pos::ChunkPos;
@@ -70,7 +69,7 @@ impl Renderer {
         swap_chain: &mut wgpu::SwapChain,
         queue: &wgpu::Queue,
         camera_uniform: &Uniform<CameraUniform>,
-        chunkpos_uniform: &mut Uniform<ChunkPositionUniform>,
+        chunkpos_uniform: &mut MultiUniform<ChunkPos, ChunkPositionUniform>,
         texture_manager: &TextureManager,
     ) -> Result<(), wgpu::SwapChainError> {
 
@@ -109,20 +108,16 @@ impl Renderer {
 
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_bind_group(camera_uniform.index, &camera_uniform.uniform_bind_group, &[]); // Camera
-            render_pass.set_bind_group(chunkpos_uniform.index, &chunkpos_uniform.uniform_bind_group, &[]); // Chunk Positions uniform
             render_pass.set_bind_group(2, texture_manager.get_bind_group(), &[]); // Texture
 
             for (pos, buffer) in &self.vertex_buffer {
-                chunkpos_uniform.data = pos.to_raw();
-                chunkpos_uniform.update(&queue);
+                let a = *chunkpos_uniform.offset.get(&pos).unwrap() * wgpu::BIND_BUFFER_ALIGNMENT as u32;
+                render_pass.set_bind_group(chunkpos_uniform.index, &chunkpos_uniform.uniform_bind_group, &[a]); // Chunk Positions uniform changes with every chunk
 
                 render_pass.set_vertex_buffer(0, buffer.get_buffer().slice(..));
                 render_pass.set_index_buffer(self.index_buffer.get(&pos).unwrap().get_buffer().slice(..));
                 render_pass.draw_indexed(0..self.index_buffer.get(&pos).unwrap().len as u32, 0, 0..1);
             }
-            
-                
-
         }
     
         queue.submit(vec![encoder.finish()]);

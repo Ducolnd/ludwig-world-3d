@@ -1,5 +1,92 @@
 use crate::render::camera::Camera;
 use wgpu::util::DeviceExt;
+use std::collections::HashMap;
+use std::hash::Hash;
+
+use crate::render::low::buffer::DynamicBuffer;
+
+/// A Uniform Buffer that can store multple things of T.
+/// In the renderpass the offset should be set accordingly
+pub struct MultiUniform<K: Hash + Eq + Copy, T: bytemuck::Pod + bytemuck::Zeroable> {
+    pub buffer: DynamicBuffer<T>,
+    pub uniform_bind_group_layout: wgpu::BindGroupLayout,
+    pub uniform_bind_group: wgpu::BindGroup,
+    pub offset: HashMap<K, u32>,
+
+    pub index: u32,
+    pub binding: u32,
+    
+    size: u32, // How many items of T
+}
+
+impl<K: Hash + Eq + Copy, T: bytemuck::Pod + bytemuck::Zeroable> MultiUniform<K, T> {
+    pub fn new(device: &wgpu::Device, binding: u32, index: u32) -> Self {
+        let size = std::mem::size_of::<T>() as u64;
+        let uniform_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: binding,
+                    visibility: wgpu::ShaderStage::VERTEX,
+                    ty: wgpu::BindingType::UniformBuffer {
+                        dynamic: true,
+                        min_binding_size: wgpu::BufferSize::new(std::mem::size_of::<T>() as u64),
+                    },
+                    count: None,
+                }
+            ],
+            label: Some("uniform_bind_group_layout"),
+        });
+
+        let buffer = DynamicBuffer::new(1000, device, wgpu::BufferUsage::UNIFORM);
+
+        let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &uniform_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: binding,
+                    resource: wgpu::BindingResource::Buffer(buffer.get_buffer().slice(..size)),
+                }
+            ],
+            label: Some("uniform_bind_group"),
+        });
+
+        let offset = HashMap::new();
+
+        Self {
+            buffer,
+            uniform_bind_group,
+            uniform_bind_group_layout,
+            offset,
+
+            index,
+            binding,
+
+            size: 0,
+        }
+    }
+
+    pub fn add(&mut self, queue: &wgpu::Queue, at: K, data: T) {
+        self.offset.insert(at, self.size);
+
+        queue.write_buffer(
+            &self.buffer.get_buffer(), 
+            self.size as u64 * wgpu::BIND_BUFFER_ALIGNMENT, 
+            bytemuck::cast_slice(&[data])
+        );
+
+        self.size += 1;
+    }
+
+    pub fn modify(&mut self, queue: &wgpu::Queue, at: K, data: T) {
+        let offset = self.offset.get(&at).unwrap();
+
+        queue.write_buffer(
+            &self.buffer.get_buffer(), 
+            *offset as u64 * wgpu::BIND_BUFFER_ALIGNMENT, 
+            bytemuck::cast_slice(&[data])
+        );
+    }
+}
 
 pub struct Uniform<T: bytemuck::Pod + bytemuck::Zeroable> {
     pub uniform_buffer: wgpu::Buffer,

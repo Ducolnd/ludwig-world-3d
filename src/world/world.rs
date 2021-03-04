@@ -34,6 +34,8 @@ impl World {
         let elapsed = now.elapsed();
         println!("It took {} microseconds to mesh this chunk. This chunk has {} quads", elapsed.as_micros(), mesh.mesh.quads.objects.len());
 
+        master.chunkpos_uniform.add(&master.queue, pos, pos.to_raw());
+
         // Upload mesh to GPU
         master.new_buffer(mesh.to_vertex_array(), pos);
 

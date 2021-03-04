@@ -7,7 +7,7 @@ use crate::render::shapes::shape::Shape;
 use crate::render::low::renderer::Renderer;
 use crate::render::low::buffer::DynamicBuffer;
 use crate::render::camera::{Camera, CameraController};
-use crate::render::low::uniforms::{CameraUniform, ChunkPositionUniform, Uniform};
+use crate::render::low::uniforms::{CameraUniform, MultiUniform, ChunkPositionUniform, Uniform};
 use crate::render::low::init::default_depth_texture;
 use crate::render::low::textures::{Texture, TextureManager};
 
@@ -34,7 +34,7 @@ pub struct Master {
     // Textures
     pub texture_manager: TextureManager,
     // Chunk stuff
-    pub chunkpos_uniform: Uniform<ChunkPositionUniform>
+    pub chunkpos_uniform: MultiUniform<ChunkPos, ChunkPositionUniform>
 }
 
 impl Master {
@@ -93,9 +93,7 @@ impl Master {
         let camera_uniform = Uniform::new(&device, camera_uniform_data, 0, 0); // At binding 0
 
         // Chunkpos Uniform setup
-        let chunkpos_uniform_data = ChunkPositionUniform {location: [3.0, 0.0, 0.0]};
-        let chunkpos_uniform = Uniform::new(&device,chunkpos_uniform_data , 3, 1); // At binding 3 and index 1 in pipeline
-        chunkpos_uniform.update(&queue);
+        let chunkpos_uniform = MultiUniform::new(&device, 3, 1); // At binding 3 and index 1 in pipeline
 
         // Load a texture
         let mut texture_manager = TextureManager::new(&device);
