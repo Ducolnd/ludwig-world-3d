@@ -173,28 +173,6 @@ impl Master {
         self.renderer.index_buffer.insert(pos, index_buffer);
     }
 
-    /// Add some data to the buffer at pos
-    pub fn add_to_buffer<T: Shape>(&mut self, vertex_array: &VertexArray<T>, pos: ChunkPos) {
-        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("Render Encoder"),
-        });
-
-        self.renderer.vertex_buffer.get_mut(&pos).unwrap().insert_back(
-            &self.device, 
-            &mut encoder,
-            &vertex_array.to_vertices(),
-        );
-
-        self.renderer.index_buffer.get_mut(&pos).unwrap().insert_back(
-            &self.device, 
-            &mut encoder,
-            &vertex_array.to_indices(),
-        );
-
-        self.queue.submit(vec![encoder.finish()]);
-
-    }
-
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         self.size = new_size;
         self.sc_desc.width = new_size.width;

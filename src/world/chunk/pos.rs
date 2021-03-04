@@ -1,3 +1,5 @@
+use std::ops::{Add, Sub};
+
 use crate::world::constants::*;
 use crate::render::low::uniforms::ChunkPositionUniform;
 
@@ -11,11 +13,41 @@ pub struct ChunkPos {
 }
 
 impl ChunkPos {
+    pub fn new(x: i32, y: i32, z: i32) -> Self {
+        Self {
+            x,y,z,
+        }
+    }
+
     pub fn to_raw(&self) -> ChunkPositionUniform {
         ChunkPositionUniform{ location: [
             (self.x * CHUNKSIZE as i32) as f32, 
             (self.y * 1 as i32) as f32, 
             (self.z * CHUNKSIZE as i32) as f32, ] 
+        }
+    }
+}
+
+impl Add for ChunkPos {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+            z: self.z + other.z,
+        }
+    }
+}
+
+impl Sub for ChunkPos {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self {
+            x: self.x - other.x,
+            y: self.y - other.y,
+            z: self.z - other.z,
         }
     }
 }

@@ -21,7 +21,8 @@ pub struct MultiUniform<K: Hash + Eq + Copy, T: bytemuck::Pod + bytemuck::Zeroab
 
 impl<K: Hash + Eq + Copy, T: bytemuck::Pod + bytemuck::Zeroable> MultiUniform<K, T> {
     pub fn new(device: &wgpu::Device, binding: u32, index: u32) -> Self {
-        let size = std::mem::size_of::<T>() as u64;
+        let t_size = std::mem::size_of::<T>() as u64;
+
         let uniform_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[
                 wgpu::BindGroupLayoutEntry {
@@ -37,14 +38,14 @@ impl<K: Hash + Eq + Copy, T: bytemuck::Pod + bytemuck::Zeroable> MultiUniform<K,
             label: Some("uniform_bind_group_layout"),
         });
 
-        let buffer = DynamicBuffer::new(1000, device, wgpu::BufferUsage::UNIFORM);
+        let buffer = DynamicBuffer::new(2000, device, wgpu::BufferUsage::UNIFORM);
 
         let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &uniform_bind_group_layout,
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: binding,
-                    resource: wgpu::BindingResource::Buffer(buffer.get_buffer().slice(..size)),
+                    resource: wgpu::BindingResource::Buffer(buffer.get_buffer().slice(..t_size)),
                 }
             ],
             label: Some("uniform_bind_group"),

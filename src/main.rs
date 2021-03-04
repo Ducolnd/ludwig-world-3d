@@ -33,19 +33,8 @@ fn main() {
     
     let mut master = block_on(Master::new(&window));
 
-    let mut world = World::new();
-
-    let pos = ChunkPos {x: 0, y: 0, z: 0};
-    world.load_chunk(pos, &mut master);
-    world.update_chunk_buffer(&mut master, pos);
-
-    let pos = ChunkPos {x: 0, y: 0, z: 1};
-    world.load_chunk(pos, &mut master);
-    world.update_chunk_buffer(&mut master, pos);
-    
-    let pos = ChunkPos {x: 1, y: 0, z: 1};
-    world.load_chunk(pos, &mut master);
-    world.update_chunk_buffer(&mut master, pos);
+    let mut world = World::new(1);
+    world.chunk_manager.center_around(ChunkPos::new(0, 0, 0), &mut master);
 
     event_loop.run(move |event, _, control_flow| {
         match event {
