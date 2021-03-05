@@ -36,7 +36,12 @@ fn main() {
     let mut world = World::new(1);
     world.chunk_manager.center_around(ChunkPos::new(0, 0, 0), &mut master);
 
+    println!("Average meshing time: {} Average loading time: {}", world.chunk_manager.meshing_time(), world.chunk_manager.loading_time());
+
     event_loop.run(move |event, _, control_flow| {
+
+        let now = Instant::now();
+        
         match event {
             Event::WindowEvent {
                 ref event,
@@ -85,6 +90,8 @@ fn main() {
             }
             _ => {}
         }
+        let elapsed = now.elapsed();
+        // println!("Framerate: {}", 1.0 / elapsed.as_secs_f64());
     });
     
 }

@@ -2,7 +2,6 @@
 
 Ludwig World is an open world roguelike game. Procedually generated, infinite worlds in 3d space. Ludwig World used wgpu-rs as it's rendering backend 
 
-
 ## Installing
 
  1. `git clone https://github.com/Ducolnd/ludwig-world`

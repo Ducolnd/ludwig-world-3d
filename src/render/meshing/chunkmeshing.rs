@@ -6,7 +6,7 @@ use crate::render::{
 use crate::world::{
     chunk::chunk::{Chunk, index_to_coord},
     constants::*,
-    block::blocks::{get_block, BlockID},
+    block::blocks::{get_block, BlockID, Blocks},
 };
 
 pub struct ChunkMesh {
@@ -31,7 +31,7 @@ impl ChunkMesh {
         for i in 0..(CHUNKSIZE * CHUNKSIZE * WORLDHEIGHT) {
             let (x, y, z) = index_to_coord(i);
 
-            let b = chunk.at_coord(x as i32, y as i32, z as i32);
+            let b = chunk.at_coord_bounds(x as i32, y as i32, z as i32);
     
             if get_block(b).transparent {
                 continue
@@ -75,7 +75,8 @@ impl ChunkMesh {
     #[allow(dead_code)]
     /// Creates a culled mesh. Blocks that are not adjecent to a transparent
     /// will not be added to the mesh buffer
-    pub fn create_simple_mesh(&mut self, chunk: &Chunk) {
+    pub fn create_simple_mesh(&mut self, chunk: &Chunk, neighbor_chunks: [Option<&Chunk>; 4]) {
+        // neighbor_chunks = [U, R, D, L]
 
         let mut mesh = Mesh::new();
 
@@ -86,7 +87,51 @@ impl ChunkMesh {
             let y = y as i32;
             let z = z as i32;
 
-            let blockid = chunk.at_coord(x as i32, y as i32, z as i32);
+            let blockid: BlockID;
+
+            blockid = chunk.at_coord_bounds(x, y, z);
+
+            // Check out of bounds cases
+            // if x < 0 {
+            //     let c = neighbor_chunks[3];
+            //     if !c.is_none() {
+            //         blockid = c.unwrap().at_coord(CHUNKSIZE as i32 - 1, y, y);
+            //     } else {blockid = Blocks::AIR as BlockID;}
+            // }
+
+            // else if x >= CHUNKSIZE as i32 {
+            //     let c = neighbor_chunks[1];
+            //     if !c.is_none() {
+            //         blockid = c.unwrap().at_coord(0, y, y);
+            //     } else {blockid = Blocks::AIR as BlockID;}
+            // }
+
+            // else if z < 0 {
+            //     let c = neighbor_chunks[2];
+            //     if !c.is_none() {
+            //         blockid = c.unwrap().at_coord(x, y, CHUNKSIZE as i32 - 1);
+            //     } else {blockid = Blocks::AIR as BlockID;}
+            // }
+
+            // else if z >= CHUNKSIZE as i32 {
+            //     let c = neighbor_chunks[0];
+            //     if !c.is_none() {
+            //         blockid = c.unwrap().at_coord(x, y, 0);
+            //     } else {blockid = Blocks::AIR as BlockID;}
+            // }
+
+            // else if y >= WORLDHEIGHT as i32 {
+            //     blockid = Blocks::AIR as BlockID;
+            // } 
+
+            // else if y < 0 {
+            //     blockid = Blocks::AIR as BlockID;
+            // }
+
+            // else {
+            //     blockid = Blocks::AIR as BlockID;
+            // }
+
             let block = get_block(blockid);
 
             if block.transparent {
@@ -119,7 +164,7 @@ impl ChunkMesh {
         block: BlockID,
 
     ) {
-        if get_block(chunk.at_coord(check_at[0], check_at[1], check_at[2])).transparent {
+        if get_block(chunk.at_coord_bounds(check_at[0], check_at[1], check_at[2])).transparent {
             mesh.add_face(MeshFace {
                 coordinate: [coord[0] as u32, coord[1] as u32, coord[2] as u32],
                 face: face,

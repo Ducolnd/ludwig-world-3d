@@ -8,7 +8,7 @@ use crate::render::low::buffer::DynamicBuffer;
 /// A Uniform Buffer that can store multple things of T.
 /// In the renderpass the offset should be set accordingly
 pub struct MultiUniform<K: Hash + Eq + Copy, T: bytemuck::Pod + bytemuck::Zeroable> {
-    pub buffer: DynamicBuffer<T>,
+    pub buffer: wgpu::Buffer,
     pub uniform_bind_group_layout: wgpu::BindGroupLayout,
     pub uniform_bind_group: wgpu::BindGroup,
     pub offset: HashMap<K, u32>,
@@ -17,6 +17,7 @@ pub struct MultiUniform<K: Hash + Eq + Copy, T: bytemuck::Pod + bytemuck::Zeroab
     pub binding: u32,
     
     size: u32, // How many items of T
+    phantom: std::marker::PhantomData<T>,
 }
 
 impl<K: Hash + Eq + Copy, T: bytemuck::Pod + bytemuck::Zeroable> MultiUniform<K, T> {
@@ -38,14 +39,19 @@ impl<K: Hash + Eq + Copy, T: bytemuck::Pod + bytemuck::Zeroable> MultiUniform<K,
             label: Some("uniform_bind_group_layout"),
         });
 
-        let buffer = DynamicBuffer::new(2000, device, wgpu::BufferUsage::UNIFORM);
+        let buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Uniform Buffer"),
+            size: wgpu::BIND_BUFFER_ALIGNMENT * 400,
+            usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+            mapped_at_creation: false,
+        });
 
         let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &uniform_bind_group_layout,
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: binding,
-                    resource: wgpu::BindingResource::Buffer(buffer.get_buffer().slice(..t_size)),
+                    resource: wgpu::BindingResource::Buffer(buffer.slice(..t_size)),
                 }
             ],
             label: Some("uniform_bind_group"),
@@ -63,6 +69,7 @@ impl<K: Hash + Eq + Copy, T: bytemuck::Pod + bytemuck::Zeroable> MultiUniform<K,
             binding,
 
             size: 0,
+            phantom: std::marker::PhantomData,
         }
     }
 
@@ -70,8 +77,8 @@ impl<K: Hash + Eq + Copy, T: bytemuck::Pod + bytemuck::Zeroable> MultiUniform<K,
         self.offset.insert(at, self.size);
 
         queue.write_buffer(
-            &self.buffer.get_buffer(), 
-            self.size as u64 * wgpu::BIND_BUFFER_ALIGNMENT, 
+            &self.buffer, 
+            self.size as u64 * wgpu::BIND_BUFFER_ALIGNMENT, // This goes with the assumption that T is never bigger than BIND_BUFFER_ALIGNMENT (256 bytes)
             bytemuck::cast_slice(&[data])
         );
 
@@ -82,7 +89,7 @@ impl<K: Hash + Eq + Copy, T: bytemuck::Pod + bytemuck::Zeroable> MultiUniform<K,
         let offset = self.offset.get(&at).unwrap();
 
         queue.write_buffer(
-            &self.buffer.get_buffer(), 
+            &self.buffer, 
             *offset as u64 * wgpu::BIND_BUFFER_ALIGNMENT, 
             bytemuck::cast_slice(&[data])
         );

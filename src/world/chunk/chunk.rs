@@ -54,14 +54,20 @@ impl Chunk {
     }
 
     /// Returns the BlockID at a given coordinate inside a chunk
-    /// Y represents height, Z depth and X width
-    pub fn at_coord(&self, x: i32, y: i32, z: i32) -> BlockID {
+    /// Y represents height, Z depth and X width.
+    /// Also checks bounds
+    pub fn at_coord_bounds(&self, x: i32, y: i32, z: i32) -> BlockID {
         if !Chunk::in_bounds(x, y, z) {
             return 0
         }
         else {
             return self.blocks[coord_to_index(x as u32, y as u32, z as u32)]
         }      
+    }
+
+    /// This will panic if x, y or z are not in bounds
+    pub fn at_coord(&self, x: i32, y: i32, z: i32) -> BlockID {
+        self.blocks[coord_to_index(x as u32, y as u32, z as u32)]   
     }
 
     /// Returns true if the given coordinate is in the bounds
