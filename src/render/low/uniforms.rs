@@ -24,14 +24,17 @@ impl<K: Hash + Eq + Copy, T: bytemuck::Pod + bytemuck::Zeroable> MultiUniform<K,
     pub fn new(device: &wgpu::Device, binding: u32, index: u32) -> Self {
         let t_size = std::mem::size_of::<T>() as u64;
 
+        assert!(t_size < wgpu::BIND_BUFFER_ALIGNMENT);
+
         let uniform_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[
                 wgpu::BindGroupLayoutEntry {
                     binding: binding,
                     visibility: wgpu::ShaderStage::VERTEX,
-                    ty: wgpu::BindingType::UniformBuffer {
-                        dynamic: true,
-                        min_binding_size: wgpu::BufferSize::new(std::mem::size_of::<T>() as u64),
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: true,
+                        min_binding_size: wgpu::BufferSize::new(t_size),
                     },
                     count: None,
                 }
@@ -41,7 +44,7 @@ impl<K: Hash + Eq + Copy, T: bytemuck::Pod + bytemuck::Zeroable> MultiUniform<K,
 
         let buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Uniform Buffer"),
-            size: wgpu::BIND_BUFFER_ALIGNMENT * 400,
+            size: wgpu::BIND_BUFFER_ALIGNMENT * 40,
             usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
             mapped_at_creation: false,
         });
@@ -51,10 +54,14 @@ impl<K: Hash + Eq + Copy, T: bytemuck::Pod + bytemuck::Zeroable> MultiUniform<K,
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: binding,
-                    resource: wgpu::BindingResource::Buffer(buffer.slice(..t_size)),
+                    resource: wgpu::BindingResource::Buffer {
+                        buffer: &buffer,
+                        offset: 0,
+                        size: wgpu::BufferSize::new(wgpu::BIND_BUFFER_ALIGNMENT), // Meaning that T cannot be bigger than 256 bytes
+                    },
                 }
             ],
-            label: Some("uniform_bind_group"),
+            label: Some("uniform_bind_group multiuniform"),
         });
 
         let offset = HashMap::new();
@@ -122,8 +129,9 @@ impl<T: bytemuck::Pod + bytemuck::Zeroable> Uniform<T> {
                 wgpu::BindGroupLayoutEntry {
                     binding: binding,
                     visibility: wgpu::ShaderStage::VERTEX,
-                    ty: wgpu::BindingType::UniformBuffer {
-                        dynamic: false,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
                         min_binding_size: None,
                     },
                     count: None,
@@ -137,10 +145,14 @@ impl<T: bytemuck::Pod + bytemuck::Zeroable> Uniform<T> {
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: binding,
-                    resource: wgpu::BindingResource::Buffer(uniform_buffer.slice(..))
+                    resource: wgpu::BindingResource::Buffer {
+                        buffer: &uniform_buffer,
+                        offset: 0,
+                        size: None,
+                    },
                 }
             ],
-            label: Some("uniform_bind_group"),
+            label: Some("uniform_bind_group simple uniform"),
         });
     
         Self { 

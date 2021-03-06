@@ -39,10 +39,7 @@ fn main() {
 
     println!("Average meshing time: {} Average loading time: {}", world.chunk_manager.meshing_time(), world.chunk_manager.loading_time());
 
-    event_loop.run(move |event, _, control_flow| {
-
-        let now = Instant::now();
-        
+    event_loop.run(move |event, _, control_flow| {        
         match event {
             Event::WindowEvent {
                 ref event,
@@ -91,8 +88,6 @@ fn main() {
             }
             _ => {}
         }
-        let elapsed = now.elapsed();
-        // println!("Framerate: {}", 1.0 / elapsed.as_secs_f64());
     });
     
 }

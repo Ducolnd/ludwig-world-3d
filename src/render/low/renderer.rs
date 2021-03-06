@@ -37,8 +37,8 @@ impl Renderer {
         // Main rendering pipeline
         let render_pipeline = init::default_render_pipeline(
             device, 
-            &device.create_shader_module(wgpu::include_spirv!("shaders/shader.vert.spv")), 
-            &device.create_shader_module(wgpu::include_spirv!("shaders/shader.frag.spv")),
+            &device.create_shader_module(&wgpu::include_spirv!("shaders/shader.vert.spv")), 
+            &device.create_shader_module(&wgpu::include_spirv!("shaders/shader.frag.spv")),
             sc_desc,
             &[
                 camera_bind_group,  // Camera set=0
@@ -81,6 +81,7 @@ impl Renderer {
 
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Render pass descriptor in renderer"),
                 color_attachments: &[
                     wgpu::RenderPassColorAttachmentDescriptor {
                         attachment: &frame.view,
@@ -115,7 +116,7 @@ impl Renderer {
                 render_pass.set_bind_group(chunkpos_uniform.index, &chunkpos_uniform.uniform_bind_group, &[a]); // Chunk Positions uniform changes with every chunk
 
                 render_pass.set_vertex_buffer(0, buffer.get_buffer().slice(..));
-                render_pass.set_index_buffer(self.index_buffer.get(&pos).unwrap().get_buffer().slice(..));
+                render_pass.set_index_buffer(self.index_buffer.get(&pos).unwrap().get_buffer().slice(..), wgpu::IndexFormat::Uint32);
                 render_pass.draw_indexed(0..self.index_buffer.get(&pos).unwrap().len as u32, 0, 0..1);
             }
         }

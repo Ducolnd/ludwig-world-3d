@@ -1,12 +1,11 @@
 use wgpu;
 use crate::render::low::vertex::Vertex;
 
-const DEPTHFORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
-
 pub fn default_depth_texture(
     device: &wgpu::Device, 
     sc_desc: &wgpu::SwapChainDescriptor,
 ) -> (wgpu::Texture, wgpu::TextureView, wgpu::Sampler) {
+
     let desc = wgpu::TextureDescriptor {
         label: Some("depth texture"),
         size : wgpu::Extent3d {
@@ -17,8 +16,8 @@ pub fn default_depth_texture(
         mip_level_count: 1,
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
-        format: DEPTHFORMAT,
-        usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT // 3.
+        format: wgpu::TextureFormat::Depth32Float,
+        usage: wgpu::TextureUsage::RENDER_ATTACHMENT // 3.
             | wgpu::TextureUsage::SAMPLED,
     };
 
@@ -49,7 +48,7 @@ pub fn default_render_pipeline(
     fs_module: &wgpu::ShaderModule,
     sc_desc: &wgpu::SwapChainDescriptor,
     bind_group_layouts: &[&wgpu::BindGroupLayout],
-) -> wgpu::RenderPipeline{
+) -> wgpu::RenderPipeline {
 
     let render_pipeline_layout =
         device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -61,47 +60,40 @@ pub fn default_render_pipeline(
     device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some("Render Pipeline"),
         layout: Some(&render_pipeline_layout),
-        vertex_stage: wgpu::ProgrammableStageDescriptor {
+        multisample: wgpu::MultisampleState {
+            count: 1,
+            mask: !0,
+            alpha_to_coverage_enabled: false,
+        },
+        vertex: wgpu::VertexState {
             module: &vs_module,
             entry_point: "main", 
+            buffers: &[Vertex::desc()],
         },
-        fragment_stage: Some(wgpu::ProgrammableStageDescriptor { 
+        fragment: Some(wgpu::FragmentState { 
             module: &fs_module,
             entry_point: "main",
-        }),
-        rasterization_state: Some(
-            wgpu::RasterizationStateDescriptor {
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: wgpu::CullMode::None,
-                depth_bias: 0,
-                depth_bias_slope_scale: 0.0,
-                depth_bias_clamp: 0.0,
-                clamp_depth: false,
-            }
-        ),
-        color_states: &[
-            wgpu::ColorStateDescriptor {
+            targets: &[wgpu::ColorTargetState {
                 format: sc_desc.format,
-                color_blend: wgpu::BlendDescriptor::REPLACE,
-                alpha_blend: wgpu::BlendDescriptor::REPLACE,
+                color_blend: wgpu::BlendState::REPLACE,
+                alpha_blend: wgpu::BlendState::REPLACE,
                 write_mask: wgpu::ColorWrite::ALL,
-            },
-        ],
-        primitive_topology: wgpu::PrimitiveTopology::TriangleList,
-        depth_stencil_state: Some(wgpu::DepthStencilStateDescriptor {
-            format: DEPTHFORMAT,
-            depth_write_enabled: true,
-            depth_compare: wgpu::CompareFunction::Less, // 1.
-            stencil: wgpu::StencilStateDescriptor::default(), // 2.
+            }],
         }),
-        vertex_state: wgpu::VertexStateDescriptor {
-            index_format: wgpu::IndexFormat::Uint32,
-            vertex_buffers: &[
-                Vertex::desc(),
-            ],
+        primitive: wgpu::PrimitiveState {
+            front_face: wgpu::FrontFace::Ccw,
+            cull_mode: wgpu::CullMode::None,
+            polygon_mode: wgpu::PolygonMode::Fill,
+            topology: wgpu::PrimitiveTopology::TriangleList,
+            strip_index_format: None,
         },
-        sample_count: 1,
-        sample_mask: !0,
-        alpha_to_coverage_enabled: false,
+        depth_stencil: Some(wgpu::DepthStencilState {
+            format: wgpu::TextureFormat::Depth32Float,
+            depth_write_enabled: true,
+            depth_compare: wgpu::CompareFunction::Less,
+            stencil: wgpu::StencilState::default(),
+            bias: wgpu::DepthBiasState::default(),
+            clamp_depth: false,
+        }),
     })
 }

@@ -47,10 +47,10 @@ impl TextureManager {
                     wgpu::BindGroupLayoutEntry {
                         binding: 0,
                         visibility: wgpu::ShaderStage::FRAGMENT,
-                        ty: wgpu::BindingType::SampledTexture {
+                        ty: wgpu::BindingType::Texture {
                             multisampled: false,
-                            dimension: wgpu::TextureViewDimension::D2,
-                            component_type: wgpu::TextureComponentType::Uint,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float {filterable: false,},
                         },
                         count: None,
                     },
@@ -59,6 +59,7 @@ impl TextureManager {
                         visibility: wgpu::ShaderStage::FRAGMENT,
                         ty: wgpu::BindingType::Sampler {
                             comparison: false,
+                            filtering: false,
                         },
                         count: None,
                     },
