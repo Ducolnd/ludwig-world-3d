@@ -52,13 +52,15 @@ impl Sub for ChunkPos {
     }
 }
 
-/// Coordinate inside a chunk ranging from 0 to CHUNKSIZE
+#[derive(Debug, Clone, Copy)]
+/// Coordinate inside a chunk ranging from 0 to CHUNKSIZE and WORLDHEIGHT
 pub struct ChunkCoord {
-    pub x: u16,
-    pub y: u16,
-    pub z: u16,
+    pub x: i16,
+    pub y: i16,
+    pub z: i16,
 }
 
+#[derive(Debug, Clone, Copy)]
 /// Global world position
 /// this is not used for entities
 pub struct WorldCoord {
@@ -68,11 +70,27 @@ pub struct WorldCoord {
 }
 
 impl WorldCoord {
+    pub fn from_chunk_pos(chunkpos: ChunkPos, chunkcoord: ChunkCoord) -> Self {
+        Self {
+            x: (chunkpos.x * (CHUNKSIZE as i32 ) + chunkcoord.x as i32) as i64,
+            y: (chunkpos.y * (1 as i32 ) + chunkcoord.y as i32) as i64,
+            z: (chunkpos.z * (CHUNKSIZE as i32 ) + chunkcoord.z as i32) as i64,
+        }
+    }
+
     pub fn to_chunk_local(&self) -> ChunkCoord {
         ChunkCoord {
-            x: (CHUNKSIZE as u16 + (self.x % CHUNKSIZE as i64) as u16) % CHUNKSIZE as u16,
-            y: (WORLDHEIGHT as u16 + (self.y % WORLDHEIGHT as i64) as u16) % WORLDHEIGHT as u16,
-            z: (CHUNKSIZE as u16+ (self.z % CHUNKSIZE as i64) as u16) % CHUNKSIZE as u16,
+            x: (CHUNKSIZE as i16 + (self.x % CHUNKSIZE as i64) as i16) % CHUNKSIZE as i16,
+            y: (WORLDHEIGHT as i16 + (self.y % WORLDHEIGHT as i64) as i16) % WORLDHEIGHT as i16,
+            z: (CHUNKSIZE as i16+ (self.z % CHUNKSIZE as i64) as i16) % CHUNKSIZE as i16,
+        }
+    }
+
+    pub fn to_chunk_coord(&self) -> ChunkPos {
+        ChunkPos {
+            x: (self.x as f64 / CHUNKSIZE as f64).floor() as i32,
+            y: 0,
+            z: (self.z as f64 / CHUNKSIZE as f64).floor() as i32,
         }
     }
 }

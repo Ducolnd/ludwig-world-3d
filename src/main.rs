@@ -11,6 +11,7 @@ use std::time::Instant;
 
 mod render;
 mod world;
+mod helper;
 
 use render::low::master::Master;
 use render::vertexarray::VertexArray;
@@ -20,7 +21,7 @@ use render::meshing::meshing::{Mesh, MeshFace, *};
 
 use world::block::blocks;
 use world::block::blocks::get_block;
-use crate::world::chunk::pos::*;
+use world::chunk::pos::*;
 use world::world::World;
 
 fn main() {    
@@ -34,7 +35,7 @@ fn main() {
     let mut master = block_on(Master::new(&window));
 
     let mut world = World::new(1);
-    world.chunk_manager.center_around(ChunkPos::new(0, 0, 0), &mut master);
+    world.place_player(ChunkPos::new(0, 0, 0), &mut master);
 
     println!("Average meshing time: {} Average loading time: {}", world.chunk_manager.meshing_time(), world.chunk_manager.loading_time());
 

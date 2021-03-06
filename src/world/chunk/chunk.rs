@@ -7,10 +7,11 @@ use crate::world::block::blocks::{
 use crate::world::constants::{CHUNKSIZE, WORLDHEIGHT};
 use crate::world::chunk::pos::*;
 
+#[derive(Debug)]
 pub struct Chunk {
     /// blocks[x][y][z]
     blocks: [BlockID; CHUNKSIZE * CHUNKSIZE * WORLDHEIGHT],
-    pos: ChunkPos,
+    pub pos: ChunkPos,
 }
 
 impl Chunk {
@@ -19,11 +20,11 @@ impl Chunk {
 
         Self {
             blocks,
-            pos
+            pos,
         }
     }
 
-    pub fn generate(&mut self) {
+    pub fn generate(&mut self, height: u32) {
         let mut rgn = rand::thread_rng();
 
         // self.blocks[coord_to_index(0, 0, 0)] = Blocks::GRASS as BlockID;
@@ -32,7 +33,7 @@ impl Chunk {
         for x in 0..(CHUNKSIZE) as u32 {
             for z in 0..(CHUNKSIZE) as u32 {
 
-                let grassheight = 5 + rgn.gen_range(1..3);
+                let grassheight = height;
                 let dirtheight = grassheight - rgn.gen_range(1..4);
                 let stoneheight = dirtheight;
 
@@ -55,28 +56,28 @@ impl Chunk {
 
     /// Returns the BlockID at a given coordinate inside a chunk
     /// Y represents height, Z depth and X width.
-    /// Also checks bounds
-    pub fn at_coord_bounds(&self, x: i32, y: i32, z: i32) -> BlockID {
-        if !Chunk::in_bounds(x, y, z) {
+    /// Also makes sure coordinate is in bounds
+    pub fn at_coord_bounds(&self, coord: ChunkCoord) -> BlockID {
+        if !Chunk::in_bounds(coord) {
             return 0
         }
         else {
-            return self.blocks[coord_to_index(x as u32, y as u32, z as u32)]
+            return self.blocks[coord_to_index(coord.x as u32, coord.y as u32, coord.z as u32)]
         }      
     }
 
     /// This will panic if x, y or z are not in bounds
-    pub fn at_coord(&self, x: i32, y: i32, z: i32) -> BlockID {
-        self.blocks[coord_to_index(x as u32, y as u32, z as u32)]   
+    pub fn at_coord(&self, coord: ChunkCoord) -> BlockID {
+        self.blocks[coord_to_index(coord.x as u32, coord.y as u32, coord.z as u32)]   
     }
 
     /// Returns true if the given coordinate is in the bounds
     /// of a chunk
-    pub fn in_bounds(x: i32, y: i32, z: i32) -> bool {
+    pub fn in_bounds(coord: ChunkCoord) -> bool {
         if 
-            x < 0 || x >= CHUNKSIZE as i32 ||
-            z < 0 || z >= CHUNKSIZE as i32 ||
-            y < 0 || y >= WORLDHEIGHT as i32
+            coord.x < 0 || coord.x >= CHUNKSIZE as i16 ||
+            coord.z < 0 || coord.z >= CHUNKSIZE as i16 ||
+            coord.y < 0 || coord.y >= WORLDHEIGHT as i16
         {
             return false
         }

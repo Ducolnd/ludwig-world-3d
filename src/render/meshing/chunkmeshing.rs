@@ -1,12 +1,14 @@
-use crate::render::meshing::meshing::*;
 use crate::render::{
     vertexarray::VertexArray,
     shapes::shapes::Quad,
+    meshing::meshing::*,
 };
 use crate::world::{
     chunk::chunk::{Chunk, index_to_coord},
+    chunk::chunkmanager::ChunkManager,
     constants::*,
-    block::blocks::{get_block, BlockID, Blocks},
+    block::blocks::{get_block, BlockID, Blocks, Block},
+    chunk::pos::*,
 };
 
 pub struct ChunkMesh {
@@ -31,7 +33,7 @@ impl ChunkMesh {
         for i in 0..(CHUNKSIZE * CHUNKSIZE * WORLDHEIGHT) {
             let (x, y, z) = index_to_coord(i);
 
-            let b = chunk.at_coord_bounds(x as i32, y as i32, z as i32);
+            let b = chunk.at_coord_bounds(ChunkCoord {x: x as i16, y: y as i16, z: z as i16});
     
             if get_block(b).transparent {
                 continue
@@ -73,65 +75,18 @@ impl ChunkMesh {
     }
 
     #[allow(dead_code)]
-    /// Creates a culled mesh. Blocks that are not adjecent to a transparent
+    /// Creates a culled mesh. Faces that are not adjecent to a transparent
     /// will not be added to the mesh buffer
-    pub fn create_simple_mesh(&mut self, chunk: &Chunk, neighbor_chunks: [Option<&Chunk>; 4]) {
-        // neighbor_chunks = [U, R, D, L]
+    pub fn create_simple_mesh(&mut self, chunk: &Chunk, chunk_manager: &ChunkManager) {
 
         let mut mesh = Mesh::new();
 
         for i in 0..(CHUNKSIZE * CHUNKSIZE * WORLDHEIGHT) {
             let (x, y, z) = index_to_coord(i);
 
-            let x = x as i32;
-            let y = y as i32;
-            let z = z as i32;
+            let coord = ChunkCoord {x: x as i16, y: y as i16, z: z as i16};
 
-            let blockid: BlockID;
-
-            blockid = chunk.at_coord_bounds(x, y, z);
-
-            // Check out of bounds cases
-            // if x < 0 {
-            //     let c = neighbor_chunks[3];
-            //     if !c.is_none() {
-            //         blockid = c.unwrap().at_coord(CHUNKSIZE as i32 - 1, y, y);
-            //     } else {blockid = Blocks::AIR as BlockID;}
-            // }
-
-            // else if x >= CHUNKSIZE as i32 {
-            //     let c = neighbor_chunks[1];
-            //     if !c.is_none() {
-            //         blockid = c.unwrap().at_coord(0, y, y);
-            //     } else {blockid = Blocks::AIR as BlockID;}
-            // }
-
-            // else if z < 0 {
-            //     let c = neighbor_chunks[2];
-            //     if !c.is_none() {
-            //         blockid = c.unwrap().at_coord(x, y, CHUNKSIZE as i32 - 1);
-            //     } else {blockid = Blocks::AIR as BlockID;}
-            // }
-
-            // else if z >= CHUNKSIZE as i32 {
-            //     let c = neighbor_chunks[0];
-            //     if !c.is_none() {
-            //         blockid = c.unwrap().at_coord(x, y, 0);
-            //     } else {blockid = Blocks::AIR as BlockID;}
-            // }
-
-            // else if y >= WORLDHEIGHT as i32 {
-            //     blockid = Blocks::AIR as BlockID;
-            // } 
-
-            // else if y < 0 {
-            //     blockid = Blocks::AIR as BlockID;
-            // }
-
-            // else {
-            //     blockid = Blocks::AIR as BlockID;
-            // }
-
+            let blockid = chunk.at_coord(coord);
             let block = get_block(blockid);
 
             if block.transparent {
@@ -139,17 +94,17 @@ impl ChunkMesh {
             }
 
             // Left
-            ChunkMesh::add_if_needed(chunk, &mut mesh, [x + 1, y, z], [x, y, z], LEFT_FACE, blockid);
+            ChunkMesh::add_if_needed(chunk, &mut mesh, ChunkCoord {x: coord.x + 1, ..coord}, coord, LEFT_FACE, blockid, chunk_manager);
             // Right
-            ChunkMesh::add_if_needed(chunk, &mut mesh, [x - 1, y, z], [x, y, z], RIGHT_FACE, blockid);
+            ChunkMesh::add_if_needed(chunk, &mut mesh, ChunkCoord {x: coord.x - 1, ..coord}, coord, RIGHT_FACE, blockid, chunk_manager);
             // Top
-            ChunkMesh::add_if_needed(chunk, &mut mesh, [x, y + 1, z], [x, y, z], TOP_FACE, blockid);
+            ChunkMesh::add_if_needed(chunk, &mut mesh, ChunkCoord {y: coord.y + 1, ..coord}, coord, TOP_FACE, blockid, chunk_manager);
             // Bottom
-            ChunkMesh::add_if_needed(chunk, &mut mesh, [x, y - 1, z], [x, y, z], BOTTOM_FACE, blockid);
+            ChunkMesh::add_if_needed(chunk, &mut mesh, ChunkCoord {y: coord.y - 1, ..coord}, coord, BOTTOM_FACE, blockid, chunk_manager);
             // Back
-            ChunkMesh::add_if_needed(chunk, &mut mesh, [x, y, z + 1], [x, y, z], BACK_FACE, blockid);
+            ChunkMesh::add_if_needed(chunk, &mut mesh, ChunkCoord {z: coord.z + 1, ..coord}, coord, BACK_FACE, blockid, chunk_manager);
             // Front
-            ChunkMesh::add_if_needed(chunk, &mut mesh, [x, y, z - 1], [x, y, z], FRONT_FACE, blockid);        
+            ChunkMesh::add_if_needed(chunk, &mut mesh, ChunkCoord {z: coord.z - 1, ..coord}, coord, FRONT_FACE, blockid, chunk_manager);        
         }
 
         self.mesh = mesh;
@@ -158,15 +113,28 @@ impl ChunkMesh {
     fn add_if_needed(
         chunk: &Chunk,
         mesh: &mut Mesh,
-        check_at: [i32; 3],
-        coord: [i32; 3],
+        neighbor_block: ChunkCoord,
+        coord: ChunkCoord,
         face: Face,
         block: BlockID,
-
+        manager: &ChunkManager,
     ) {
-        if get_block(chunk.at_coord_bounds(check_at[0], check_at[1], check_at[2])).transparent {
+
+        let blockid: BlockID;
+
+        // If in bounds, get just get it from the current chunk (faster)
+        if Chunk::in_bounds(neighbor_block) {
+            blockid = chunk.at_coord(neighbor_block);
+
+        // If not in bounds, request the block from the chunkmanager
+        } else {
+            // println!("Block {:?} in chunk {:?}", neighbor_block, chunk.pos);
+            blockid = manager.get_block_at_coord(WorldCoord::from_chunk_pos(chunk.pos, neighbor_block)).unwrap_or(Blocks::AIR as BlockID)
+        }
+        
+        if get_block(blockid).transparent {
             mesh.add_face(MeshFace {
-                coordinate: [coord[0] as u32, coord[1] as u32, coord[2] as u32],
+                coordinate: [coord.x as u32, coord.y as u32, coord.z as u32],
                 face: face,
                 blocktype: block,
             });
@@ -178,5 +146,6 @@ impl ChunkMesh {
     /// formed into a single quad. This is only useful if GPU memory usage is high
     /// because generating this mesh is slower
     pub fn create_greedy_mesh() {
+        // Todo implement this
     }
 }
