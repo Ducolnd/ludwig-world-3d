@@ -1,4 +1,4 @@
-use crate::render::camera::Camera;
+use crate::render::camera::{CameraView, Projection, Camera};
 use wgpu::util::DeviceExt;
 use std::collections::HashMap;
 use std::hash::Hash;
@@ -184,7 +184,7 @@ impl CameraUniform {
         }
     }
 
-    pub fn update_view_proj(&mut self, camera: &Camera) {
-        self.view_proj = camera.build_view_projection_matrix().into();
+    pub fn update_view_proj(&mut self, data: cgmath::Matrix4<f32>) {
+        self.view_proj = data.into();
     }
 }

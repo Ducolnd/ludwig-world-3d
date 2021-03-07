@@ -39,21 +39,21 @@ fn main() {
 
     println!("Average meshing time: {} Average loading time: {}", world.chunk_manager.meshing_time(), world.chunk_manager.loading_time());
 
-    event_loop.run(move |event, _, control_flow| {
-
-        let now = Instant::now();
-        
+    let mut last_render_time = std::time::Instant::now();
+    event_loop.run(move |event, _, control_flow| {        
         match event {
+            Event::DeviceEvent {
+                ref event,
+                .. // We're not using device_id currently
+            } => {
+                master.input(event);
+            }
+
             Event::WindowEvent {
                 ref event,
                 window_id,
             } if window_id == window.id() => {
-
-                // Handle input
-                master.input(event);
-                // Update
-                master.update();
-
+                
                 match event {
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                     WindowEvent::KeyboardInput { input, .. } => match input {
@@ -76,6 +76,13 @@ fn main() {
                 
             }
             Event::RedrawRequested(_) => {
+                let now = std::time::Instant::now();
+                let dt = now - last_render_time;
+                last_render_time = now;
+                master.update(dt);
+
+                println!("FPS: {}", 1.0 / dt.as_secs_f64());
+
                 match master.render() { // Render
                     Ok(_) => {}
                     // Recreate the swap_chain if lost
@@ -91,8 +98,6 @@ fn main() {
             }
             _ => {}
         }
-        let elapsed = now.elapsed();
-        // println!("Framerate: {}", 1.0 / elapsed.as_secs_f64());
     });
     
 }

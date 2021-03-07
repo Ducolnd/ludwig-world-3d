@@ -1,6 +1,6 @@
 use wgpu;
 use wgpu::util::DeviceExt;
-use winit::event::WindowEvent;
+use winit::event::{WindowEvent, DeviceEvent, KeyboardInput, ElementState};
 
 use crate::render::vertexarray::VertexArray;
 use crate::render::shapes::shape::Shape;
@@ -29,8 +29,6 @@ pub struct Master {
     pub renderer: Renderer,
     // Camera
     pub camera: Camera,
-    pub controller: CameraController,
-    pub camera_uniform: Uniform<CameraUniform>,
     // Textures
     pub texture_manager: TextureManager,
     // Chunk stuff
@@ -71,26 +69,7 @@ impl Master {
         };
         let swap_chain = device.create_swap_chain(&surface, &sc_desc);
 
-        // Camera setup
-        let camera = Camera {
-            // position the camera one unit up and 2 units back
-            // +z is out of the screen
-            eye: (0.0, 1.0, 2.0).into(),
-            target: (0.0, 0.0, 0.0).into(),
-            // which way is "up"
-            up: cgmath::Vector3::unit_y(),
-            aspect: sc_desc.width as f32 / sc_desc.height as f32,
-            fovy: 45.0,
-            znear: 0.1,
-            zfar: 100.0,
-        };
-        let controller = CameraController::new(0.2);
-
-        // Camera controller
-        let mut camera_uniform_data = CameraUniform::new();
-        camera_uniform_data.update_view_proj(&camera);
-
-        let camera_uniform = Uniform::new(&device, camera_uniform_data, 0, 0); // At binding 0
+        let camera = Camera::new(&device, sc_desc.width, sc_desc.height);
 
         // Chunkpos Uniform setup
         let chunkpos_uniform = MultiUniform::new(&device, 3, 1); // At binding 3 and index 1 in pipeline
@@ -102,7 +81,7 @@ impl Master {
         let renderer = Renderer::new(
             &device,
             &sc_desc,
-            &camera_uniform.uniform_bind_group_layout,
+            &camera.uniform.uniform_bind_group_layout,
             &chunkpos_uniform.uniform_bind_group_layout,
             &texture_manager,
         );
@@ -117,8 +96,6 @@ impl Master {
 
             renderer,
             camera,
-            controller,
-            camera_uniform,
 
             texture_manager,
 
@@ -131,7 +108,7 @@ impl Master {
             &self.device, 
             &mut self.swap_chain, 
             &self.queue,
-            &self.camera_uniform,
+            &self.camera.uniform,
             &mut self.chunkpos_uniform,
             &self.texture_manager,
         )
@@ -174,25 +151,54 @@ impl Master {
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
+        // Update swap chain
         self.size = new_size;
         self.sc_desc.width = new_size.width;
         self.sc_desc.height = new_size.height;
-        self.swap_chain = self.device.create_swap_chain(&self.surface, &self.sc_desc); // Swap chain has to be reconstructed
+        self.swap_chain = self.device.create_swap_chain(&self.surface, &self.sc_desc);
 
+        // Update depth texture
         let (_, depth_view, _) = default_depth_texture(&self.device, &self.sc_desc);
-
         self.renderer.depth_view = depth_view;
+
+        // Update camera
+        self.camera.projection.resize(new_size.width, new_size.height);
 
         println!("New screensize: {}x{}", new_size.width, new_size.height);
     }
 
-    pub fn input(&mut self, event: &WindowEvent) {
-        self.controller.process_events(event);
+    pub fn input(&mut self, event: &DeviceEvent) -> bool {
+        match event {
+            DeviceEvent::Key(
+                KeyboardInput {
+                    virtual_keycode: Some(key),
+                    state,
+                    ..
+                }
+            ) => self.camera.controller.process_keyboard(*key, *state),
+            DeviceEvent::MouseWheel { delta, .. } => {
+                self.camera.controller.process_scroll(delta);
+                true
+            }
+            DeviceEvent::Button {
+                button: 1, // Left Mouse Button
+                state,
+            } => {
+                self.camera.mouse_pressed = *state == ElementState::Pressed;
+                true
+            }
+            DeviceEvent::MouseMotion { delta } => {
+                if self.camera.mouse_pressed {
+                    self.camera.controller.process_mouse(delta.0, delta.1);
+                }
+                true
+            }
+            _ => false,
+        }
     }
 
-    pub fn update(&mut self) {
-        self.controller.update_camera(&mut self.camera);
-        self.camera_uniform.data.update_view_proj(&self.camera);
-        self.camera_uniform.update(&self.queue);
+    pub fn update(&mut self, dt: std::time::Duration) {
+        self.camera.controller.update_camera(&mut self.camera.view, dt);
+        self.camera.update(&self.queue);
     }
 }
