@@ -18,6 +18,7 @@ pub fn coords_to_float(coords: [u32; 2]) -> [f32; 2] {
     ]
 }
 
+#[derive(Debug, Copy, Clone)]
 pub struct TextureTile {
     pub coords: Point2<u32>, // Index coord of texture
 }
@@ -25,11 +26,17 @@ pub struct TextureTile {
 impl TextureTile {
     pub fn to_usable(&self) -> [[f32; 2]; 4] {
         [
+            coords_to_float([self.coords.x * TEXTURE_WIDTH + TEXTURE_WIDTH, self.coords.y * TEXTURE_HEIGHT]),
             coords_to_float([self.coords.x * TEXTURE_WIDTH, self.coords.y * TEXTURE_HEIGHT]),
             coords_to_float([self.coords.x * TEXTURE_WIDTH, self.coords.y * TEXTURE_HEIGHT + TEXTURE_HEIGHT]),
             coords_to_float([self.coords.x * TEXTURE_WIDTH + TEXTURE_WIDTH, self.coords.y * TEXTURE_HEIGHT + TEXTURE_HEIGHT]),
-            coords_to_float([self.coords.x * TEXTURE_WIDTH + TEXTURE_WIDTH, self.coords.y * TEXTURE_HEIGHT]),
         ]
+    }
+
+    pub const fn new(x: u32, y: u32) -> Self {
+        Self {
+            coords: Point2 {x, y},
+        }
     }
 }
 

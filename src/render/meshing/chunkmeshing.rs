@@ -7,7 +7,7 @@ use crate::world::{
     chunk::chunk::{Chunk, index_to_coord},
     chunk::chunkmanager::ChunkManager,
     constants::*,
-    block::blocks::{get_block, BlockID, Blocks, Block},
+    block::blocks::{get_block, BlockID, Blocks, Block, Sides},
     chunk::pos::*,
 };
 
@@ -41,32 +41,32 @@ impl ChunkMesh {
 
             mesh.add_face(MeshFace {
                 coordinate: [x, y, z],
-                face: RIGHT_FACE,
+                face: Sides::RIGHT,
                 blocktype: b,
             });
             mesh.add_face(MeshFace {
                 coordinate: [x, y, z],
-                face: FRONT_FACE,
+                face: Sides::FRONT,
                 blocktype: b,
             });
             mesh.add_face(MeshFace {
                 coordinate: [x, y, z],
-                face: BACK_FACE,
+                face: Sides::BACK,
                 blocktype: b,
             });
             mesh.add_face(MeshFace {
                 coordinate: [x, y, z],
-                face: LEFT_FACE,
+                face: Sides::LEFT,
                 blocktype: b,
             });
             mesh.add_face(MeshFace {
                 coordinate: [x, y, z],
-                face: TOP_FACE,
+                face: Sides::TOP,
                 blocktype: b,
             });
             mesh.add_face(MeshFace {
                 coordinate: [x, y, z],
-                face: BOTTOM_FACE,
+                face: Sides::BOTTOM,
                 blocktype: b,
             });
         }
@@ -94,17 +94,17 @@ impl ChunkMesh {
             }
 
             // Left
-            ChunkMesh::add_if_needed(chunk, &mut mesh, ChunkCoord {x: coord.x + 1, ..coord}, coord, LEFT_FACE, blockid, chunk_manager);
+            ChunkMesh::add_if_needed(chunk, &mut mesh, ChunkCoord {x: coord.x + 1, ..coord}, coord, Sides::LEFT, blockid, chunk_manager);
             // Right
-            ChunkMesh::add_if_needed(chunk, &mut mesh, ChunkCoord {x: coord.x - 1, ..coord}, coord, RIGHT_FACE, blockid, chunk_manager);
+            ChunkMesh::add_if_needed(chunk, &mut mesh, ChunkCoord {x: coord.x - 1, ..coord}, coord, Sides::RIGHT, blockid, chunk_manager);
             // Top
-            ChunkMesh::add_if_needed(chunk, &mut mesh, ChunkCoord {y: coord.y + 1, ..coord}, coord, TOP_FACE, blockid, chunk_manager);
+            ChunkMesh::add_if_needed(chunk, &mut mesh, ChunkCoord {y: coord.y + 1, ..coord}, coord, Sides::TOP, blockid, chunk_manager);
             // Bottom
-            ChunkMesh::add_if_needed(chunk, &mut mesh, ChunkCoord {y: coord.y - 1, ..coord}, coord, BOTTOM_FACE, blockid, chunk_manager);
+            ChunkMesh::add_if_needed(chunk, &mut mesh, ChunkCoord {y: coord.y - 1, ..coord}, coord, Sides::BOTTOM, blockid, chunk_manager);
             // Back
-            ChunkMesh::add_if_needed(chunk, &mut mesh, ChunkCoord {z: coord.z + 1, ..coord}, coord, BACK_FACE, blockid, chunk_manager);
+            ChunkMesh::add_if_needed(chunk, &mut mesh, ChunkCoord {z: coord.z + 1, ..coord}, coord, Sides::BACK, blockid, chunk_manager);
             // Front
-            ChunkMesh::add_if_needed(chunk, &mut mesh, ChunkCoord {z: coord.z - 1, ..coord}, coord, FRONT_FACE, blockid, chunk_manager);        
+            ChunkMesh::add_if_needed(chunk, &mut mesh, ChunkCoord {z: coord.z - 1, ..coord}, coord, Sides::FRONT, blockid, chunk_manager);        
         }
 
         self.mesh = mesh;
@@ -115,7 +115,7 @@ impl ChunkMesh {
         mesh: &mut Mesh,
         neighbor_block: ChunkCoord,
         coord: ChunkCoord,
-        face: Face,
+        face: Sides,
         block: BlockID,
         manager: &ChunkManager,
     ) {
