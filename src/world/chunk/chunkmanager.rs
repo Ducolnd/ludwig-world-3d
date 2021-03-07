@@ -3,6 +3,7 @@ use std::time::Instant;
 
 use crate::world::chunk::{chunk::Chunk, pos::*};
 use crate::world::map::Map;
+use crate::world::constants::*;
 use crate::world::block::blocks::BlockID;
 use crate::render::meshing::chunkmeshing::ChunkMesh;
 use crate::render::low::master::Master;
@@ -33,7 +34,7 @@ impl ChunkManager {
         }
     }
 
-    pub fn load_chunk(&mut self, pos: ChunkPos, master: &mut Master, height: u32) {
+    pub fn load_chunk(&mut self, pos: ChunkPos, master: &mut Master, height: [u32; CHUNKSIZE * CHUNKSIZE]) {
         println!("loading chunk at : {:?}", pos);
 
         let mut chunk = Chunk::new(pos);
@@ -89,7 +90,7 @@ impl ChunkManager {
     pub fn center_around(&mut self, center: ChunkPos, master: &mut Master, map: &Map) {
         for x in -1 * self.render_distance as i32..(self.render_distance + 1) as i32 {
             for z in -1 * self.render_distance as i32..(self.render_distance + 1) as i32 {
-                self.load_chunk(center + ChunkPos::new(x, 0, z), master, 10);
+                // self.load_chunk(center + ChunkPos::new(x, 0, z), master, 10);
             }
         }
 

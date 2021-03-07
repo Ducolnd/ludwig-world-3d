@@ -27,8 +27,6 @@ impl World {
         let chunk_manager = ChunkManager::init(RENDER_DISTANCE as u32);
         let mut map = Map::new(seed);
 
-        map.create_heightmap();
-
         Self {
             chunk_manager,
             seed,
@@ -37,7 +35,15 @@ impl World {
     }
 
     pub fn place_player(&mut self, pos: ChunkPos, master: &mut Master) {
-        self.chunk_manager.load_chunk(pos, master, 10);
-        self.chunk_manager.load_chunk(ChunkPos {x: pos.x + 1, ..pos}, master, 10);
+        self.load_chunk(pos, master);
+        self.load_chunk(ChunkPos {x: pos.x + 1, ..pos}, master);
+        self.load_chunk(ChunkPos {x: pos.x + 2, ..pos}, master);
+        self.load_chunk(ChunkPos {x: pos.x + 3, ..pos}, master);
+        self.load_chunk(ChunkPos {z: pos.z + 1, ..pos}, master);
+        self.load_chunk(ChunkPos {z: pos.z - 1, ..pos}, master);
+    }
+
+    fn load_chunk(&mut self, pos: ChunkPos, master: &mut Master) {
+        self.chunk_manager.load_chunk(pos, master, self.map.create_heightmap(pos));
     }
 }

@@ -24,7 +24,7 @@ impl Chunk {
         }
     }
 
-    pub fn generate(&mut self, height: u32) {
+    pub fn generate(&mut self, height: [u32; CHUNKSIZE * CHUNKSIZE]) {
         let mut rgn = rand::thread_rng();
 
         // self.blocks[coord_to_index(0, 0, 0)] = Blocks::GRASS as BlockID;
@@ -33,7 +33,7 @@ impl Chunk {
         for x in 0..(CHUNKSIZE) as u32 {
             for z in 0..(CHUNKSIZE) as u32 {
 
-                let grassheight = height;
+                let grassheight = height[x as usize + z as usize * CHUNKSIZE];
                 let dirtheight = grassheight - rgn.gen_range(1..4);
                 let stoneheight = dirtheight;
 

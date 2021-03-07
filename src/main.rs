@@ -81,7 +81,7 @@ fn main() {
                 last_render_time = now;
                 master.update(dt);
 
-                println!("FPS: {}", 1.0 / dt.as_secs_f64());
+                // println!("FPS: {}", 1.0 / dt.as_secs_f64());
 
                 match master.render() { // Render
                     Ok(_) => {}
