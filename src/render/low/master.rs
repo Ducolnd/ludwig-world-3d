@@ -46,7 +46,7 @@ impl Master {
         let surface = unsafe { instance.create_surface(window) };
         let adapter = instance.request_adapter(
             &wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::Default,
+                power_preference: wgpu::PowerPreference::default(),
                 compatible_surface: Some(&surface),
             },
         ).await.unwrap();
@@ -55,13 +55,13 @@ impl Master {
             &wgpu::DeviceDescriptor {
                 features: wgpu::Features::empty(),
                 limits: wgpu::Limits::default(),
-                shader_validation: true,
+                label: Some("Device descriptior"),
             },
             None,
         ).await.unwrap();
 
         let sc_desc = wgpu::SwapChainDescriptor { // How should the swap chain be used?
-            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT, // Texture usage
+            usage: wgpu::TextureUsage::RENDER_ATTACHMENT, // Texture usage
             format: wgpu::TextureFormat::Bgra8UnormSrgb,
             width: size.width,
             height: size.height,
