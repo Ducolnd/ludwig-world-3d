@@ -5,3 +5,4 @@ pub mod vertex;
 pub mod master;
 pub mod textures;
 pub mod uniforms;
+pub mod drawable;

@@ -12,6 +12,7 @@ use std::time::Instant;
 mod render;
 mod world;
 mod helper;
+mod game;
 
 use render::low::master::Master;
 use render::vertexarray::VertexArray;
@@ -24,7 +25,10 @@ use world::block::blocks::get_block;
 use world::chunk::pos::*;
 use world::world::World;
 
+use game::player::player::Player;
+
 fn main() {    
+    // Winit
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("Ludwig Engine")
@@ -32,13 +36,19 @@ fn main() {
         .build(&event_loop)
         .unwrap();
     
+    // Master
     let mut master = block_on(Master::new(&window));
 
+    // Game setup
+    let player = Player::new((10.0, 5.0, 4.0).into());
     let mut world = World::new(1);
-    world.place_player(ChunkPos::new(0, 0, 0), &mut master);
+
+    world.place_player(player);
 
     println!("Average meshing time: {} Average loading time: {}", world.chunk_manager.meshing_time(), world.chunk_manager.loading_time());
 
+
+    // Main loop
     let mut last_render_time = std::time::Instant::now();
     event_loop.run(move |event, _, control_flow| {        
         match event {
@@ -80,6 +90,7 @@ fn main() {
                 let dt = now - last_render_time;
                 last_render_time = now;
                 master.update(dt);
+                master.update_player(&mut world);
 
                 // println!("FPS: {}", 1.0 / dt.as_secs_f64());
 

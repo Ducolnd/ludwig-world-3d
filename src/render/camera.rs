@@ -23,9 +23,9 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(device: &wgpu::Device, width: u32, height: u32) -> Self {
+    pub fn new(device: &wgpu::Device, width: u32, height: u32, startpos: Point3<f32>) -> Self {
         let view = CameraView {
-            position: (0.0, 0.0, 0.0).into(),
+            position: startpos,
             pitch: cgmath::Rad(0.785398163),
             yaw: cgmath::Rad(0.785398163),
         };

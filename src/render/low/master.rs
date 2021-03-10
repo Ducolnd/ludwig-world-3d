@@ -1,6 +1,7 @@
 use wgpu;
 use wgpu::util::DeviceExt;
 use winit::event::{WindowEvent, DeviceEvent, KeyboardInput, ElementState};
+use std::collections::HashMap;
 
 use crate::render::vertexarray::VertexArray;
 use crate::render::shapes::shape::Shape;
@@ -8,10 +9,18 @@ use crate::render::low::renderer::Renderer;
 use crate::render::low::buffer::DynamicBuffer;
 use crate::render::camera::{Camera, CameraController};
 use crate::render::low::uniforms::{CameraUniform, MultiUniform, ChunkPositionUniform, Uniform};
-use crate::render::low::init::default_depth_texture;
-use crate::render::low::textures::{Texture, TextureManager};
+use crate::render::{
+    low::{
+        textures::{Texture, TextureManager},
+        vertex::Vertex,
+        init::default_depth_texture,
+    },
+};
 
-use crate::world::chunk::pos::ChunkPos;
+use crate::world::{
+    world::World,
+    chunk::pos::ChunkPos,
+};
 
 /// The Master owns all low level items such as the device.
 /// It also hands out Dynamic Buffers and other device/encoder
@@ -25,6 +34,8 @@ pub struct Master {
     pub swap_chain: wgpu::SwapChain,
     pub size: winit::dpi::PhysicalSize<u32>,
 
+    pub shaders: HashMap<String, wgpu::ShaderModule>,
+
     // Rendering
     pub renderer: Renderer,
     // Camera
@@ -32,7 +43,7 @@ pub struct Master {
     // Textures
     pub texture_manager: TextureManager,
     // Chunk stuff
-    pub chunkpos_uniform: MultiUniform<ChunkPos, ChunkPositionUniform>
+    pub chunkpos_uniform: MultiUniform<ChunkPos, ChunkPositionUniform>,
 }
 
 impl Master {
@@ -69,7 +80,7 @@ impl Master {
         };
         let swap_chain = device.create_swap_chain(&surface, &sc_desc);
 
-        let camera = Camera::new(&device, sc_desc.width, sc_desc.height);
+        let camera = Camera::new(&device, sc_desc.width, sc_desc.height, (0.0, 0.0, 0.0).into());
 
         // Chunkpos Uniform setup
         let chunkpos_uniform = MultiUniform::new(&device, 3, 1); // At binding 3 and index 1 in pipeline
@@ -86,6 +97,8 @@ impl Master {
             &texture_manager,
         );
 
+        let shaders = Master::load_shader(&device);
+
         Self {
             surface,
             device,
@@ -93,6 +106,8 @@ impl Master {
             sc_desc,
             swap_chain,
             size,
+
+            shaders,
 
             renderer,
             camera,
@@ -102,7 +117,9 @@ impl Master {
             chunkpos_uniform,
         }
     }
-    
+}
+
+impl Master {
     pub fn render(&mut self) -> Result<(), wgpu::SwapChainError> {
         self.renderer.render(
             &self.device, 
@@ -167,6 +184,62 @@ impl Master {
         println!("New screensize: {}x{}", new_size.width, new_size.height);
     }
 
+    /// Panics if the given shader is not loaded
+    pub fn default_pipeline(
+        &mut self,
+        vs_module: String,
+        fs_module: String,
+        bind_group_layouts: &[&wgpu::BindGroupLayout],
+    ) -> wgpu::RenderPipeline {
+    
+        let render_pipeline_layout =
+            self.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("Render Pipeline Layout"),
+                bind_group_layouts: bind_group_layouts,
+                push_constant_ranges: &[],
+            });
+    
+            self.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Render Pipeline"),
+            layout: Some(&render_pipeline_layout),
+            multisample: wgpu::MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
+            vertex: wgpu::VertexState {
+                module: &self.shaders.get(&vs_module).unwrap(),
+                entry_point: "main", 
+                buffers: &[Vertex::desc()],
+            },
+            fragment: Some(wgpu::FragmentState { 
+                module: &self.shaders.get(&fs_module).unwrap(),
+                entry_point: "main",
+                targets: &[wgpu::ColorTargetState {
+                    format: self.sc_desc.format,
+                    color_blend: wgpu::BlendState::REPLACE,
+                    alpha_blend: wgpu::BlendState::REPLACE,
+                    write_mask: wgpu::ColorWrite::ALL,
+                }],
+            }),
+            primitive: wgpu::PrimitiveState {
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: wgpu::CullMode::None,
+                polygon_mode: wgpu::PolygonMode::Fill,
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+            },
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: wgpu::TextureFormat::Depth32Float,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Less,
+                stencil: wgpu::StencilState::default(),
+                bias: wgpu::DepthBiasState::default(),
+                clamp_depth: false,
+            }),
+        })
+    }
+
     pub fn input(&mut self, event: &DeviceEvent) -> bool {
         match event {
             DeviceEvent::Key(
@@ -197,8 +270,21 @@ impl Master {
         }
     }
 
+    pub fn load_shader(device: &wgpu::Device) -> HashMap<String, wgpu::ShaderModule> {
+        let map = HashMap::new();
+
+        map.insert("fragment".to_string(), device.create_shader_module(wgpu::include_spirv!("shaders/shader.frag.spv")));
+        map.insert("vertex".to_string(), device.create_shader_module(wgpu::include_spirv!("shaders/shader.vert.spv")));
+
+        map
+    }
+
     pub fn update(&mut self, dt: std::time::Duration) {
         self.camera.controller.update_camera(&mut self.camera.view, dt);
         self.camera.update(&self.queue);
+    }
+
+    pub fn update_player(&self, world: &mut World) {
+        world.player.position = self.camera.view.position;
     }
 }

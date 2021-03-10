@@ -23,7 +23,7 @@ impl Map {
 
         for x in 0..CHUNKSIZE {
             for z in 0..CHUNKSIZE {
-                heights[x as usize + z as usize * CHUNKSIZE] = (self.noise_generator.get(x as f64 + chunk.x as f64 * CHUNKSIZE as f64, z as f64 + chunk.z as f64 * CHUNKSIZE as f64) * 20.0) as u32 + 20;
+                heights[x as usize + z as usize * CHUNKSIZE] = ((self.noise_generator.get(x as f64 + chunk.x as f64 * CHUNKSIZE as f64, z as f64 + chunk.z as f64 * CHUNKSIZE as f64) * 20.0) as i32 + 20) as u32;
             }
         }
 

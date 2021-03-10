@@ -70,6 +70,14 @@ pub struct WorldCoord {
 }
 
 impl WorldCoord {
+    pub fn from_point(point: cgmath::Point3<f32>) -> Self {
+        Self {
+            x: point.x as i64,
+            y: point.y as i64,
+            z: point.z as i64,
+        }
+    }
+
     pub fn from_chunk_pos(chunkpos: ChunkPos, chunkcoord: ChunkCoord) -> Self {
         Self {
             x: (chunkpos.x * (CHUNKSIZE as i32 ) + chunkcoord.x as i32) as i64,

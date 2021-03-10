@@ -16,7 +16,6 @@ use crate::world::chunk::pos::ChunkPos;
 /// It renders everything.
 pub struct Renderer {  
     // Render
-    pub render_pipeline: wgpu::RenderPipeline,
     pub vertex_buffer: HashMap<ChunkPos, buffer::DynamicBuffer<vertex::Vertex>>,
     pub index_buffer: HashMap<ChunkPos, buffer::DynamicBuffer<u32>>,
 
@@ -37,8 +36,6 @@ impl Renderer {
         // Main rendering pipeline
         let render_pipeline = init::default_render_pipeline(
             device, 
-            &device.create_shader_module(&wgpu::include_spirv!("shaders/shader.vert.spv")), 
-            &device.create_shader_module(&wgpu::include_spirv!("shaders/shader.frag.spv")),
             sc_desc,
             &[
                 camera_bind_group,  // Camera set=0
