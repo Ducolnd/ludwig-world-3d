@@ -61,6 +61,36 @@ impl Camera {
         self.uniform.data.update_view_proj(self.build_view_projection_matrix());
         self.uniform.update(queue);
     }
+
+    pub fn input(&mut self, event: &DeviceEvent) -> bool {
+        match event {
+            DeviceEvent::Key(
+                KeyboardInput {
+                    virtual_keycode: Some(key),
+                    state,
+                    ..
+                }
+            ) => self.controller.process_keyboard(*key, *state),
+            DeviceEvent::MouseWheel { delta, .. } => {
+                self.controller.process_scroll(delta);
+                true
+            }
+            DeviceEvent::Button {
+                button: 1, // Left Mouse Button
+                state,
+            } => {
+                self.mouse_pressed = *state == ElementState::Pressed;
+                true
+            }
+            DeviceEvent::MouseMotion { delta } => {
+                if self.mouse_pressed {
+                    self.controller.process_mouse(delta.0, delta.1);
+                }
+                true
+            }
+            _ => false,
+        }
+    }
 }
 
 

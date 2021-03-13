@@ -1,31 +1,12 @@
-use wgpu::{RenderPipeline, RenderPass};
-
 use crate::render::{
     low::{
         vertex::Vertex,
-        drawable::Drawable,
-        master::Master,
     },
     shapes::shape::Shape,
 };
 
 pub struct VertexArray<T: Shape> {
     pub objects: Vec<T>,
-}
-
-
-impl Drawable for VertexArray {
-    fn create_pipeline(master: &mut Master) -> RenderPipeline {
-        master.default_pipeline(
-            "vertex".to_string(), 
-            "fragment".to_string(), 
-            bind_group_layouts: &[&wgpu::BindGroupLayout]
-        )
-    }
-    
-    fn draw(pass: &mut RenderPass) {
-
-    }
 }
 
 impl<T: Shape> VertexArray<T> {

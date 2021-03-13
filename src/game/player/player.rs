@@ -1,8 +1,5 @@
 use cgmath::{Point3};
 
-use crate::render::camera::Camera;
-use crate::render::low::master::Master;
-
 pub struct Player {
     pub position: Point3<f32>,
 }

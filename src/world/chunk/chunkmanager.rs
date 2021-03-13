@@ -1,17 +1,25 @@
 use std::collections::HashMap;
 use std::time::Instant;
+use std::any::TypeId;
 
 use crate::world::chunk::{chunk::Chunk, pos::*};
 use crate::world::map::Map;
 use crate::world::constants::*;
 use crate::world::block::blocks::BlockID;
-use crate::render::meshing::chunkmeshing::ChunkMesh;
-use crate::render::low::master::Master;
+use crate::render::{
+    low::{
+        renderer::Renderer,
+        uniforms::{MultiUniform, ChunkPositionUniform},
+        buffer::DynamicBuffer,
+        vertex,
+    },
+    meshing::chunkmeshing::ChunkMesh,
+};
 
 /// Takes care of loading chunks, meshing chunks, unloading chunks
 pub struct ChunkManager {
     pub loaded_chunks: HashMap<ChunkPos, Chunk>,
-    chunks_meshes: HashMap<ChunkPos, ChunkMesh>,
+    pub chunks_meshes: HashMap<ChunkPos, ChunkMesh>,
 
     pub render_distance: u32,
 
@@ -19,8 +27,39 @@ pub struct ChunkManager {
     chunk_loading_time: u128,
 }
 
+// Implement the drawable trait so it can be rendered to the screen
+// impl Drawable for ChunkManager {
+//     fn create_pipeline(renderer: &mut Renderer) -> wgpu::RenderPipeline {
+//         renderer.default_pipeline(
+//             load_shader(String::from("low/shaders/shader.vert.spv")), 
+//             load_shader(String::from("low/shaders/shader.frag.spv")), 
+//             &[
+//                 &renderer.camera.uniform.uniform_bind_group_layout, // set = 0
+                
+//                 &renderer.textures.texture_bind_group_layout, // set =2
+//             ],
+//         )
+//     }
+    
+//     fn draw<'b>(&'b self, pass: &mut wgpu::RenderPass<'b>, renderer: &'b Renderer) {
+//         pass.set_pipeline(&renderer.get_pipeline::<ChunkManager>());
+//         pass.set_bind_group(renderer.camera.uniform.index, &renderer.camera.uniform.uniform_bind_group, &[]); // Camera
+//         pass.set_bind_group(2, renderer.textures.get_bind_group(), &[]); // Texture
+
+//         for pos in self.loaded_chunks.keys() {
+//             let a = self.chunkpos_uniform.offset.get(&pos).unwrap() * wgpu::BIND_BUFFER_ALIGNMENT as u32;
+//             pass.set_bind_group(self.chunkpos_uniform.index, &self.chunkpos_uniform.uniform_bind_group, &[a]); // Chunk Positions uniform changes with every chunk
+    
+//             pass.set_vertex_buffer(0, self.vertex_buffer.get(&pos).unwrap().get_buffer().slice(..));
+//             pass.set_index_buffer(self.index_buffer.get(&pos).unwrap().get_buffer().slice(..), wgpu::IndexFormat::Uint32);
+//             pass.draw_indexed(0..self.index_buffer.get(&pos).unwrap().len as u32, 0, 0..1);
+//         }
+
+//     }
+// }
+
 impl ChunkManager {
-    pub fn init(render_distance: u32) -> Self {
+    pub fn new(render_distance: u32) -> Self {
         let loaded_chunks = HashMap::new();
         let chunks_meshes = HashMap::new();
 
@@ -34,7 +73,7 @@ impl ChunkManager {
         }
     }
 
-    pub fn load_chunk(&mut self, pos: ChunkPos, master: &mut Master, height: [u32; CHUNKSIZE * CHUNKSIZE]) {
+    pub fn load_chunk(&mut self, pos: ChunkPos, height: [u32; CHUNKSIZE * CHUNKSIZE]) {
         println!("loading chunk at : {:?}", pos);
 
         let mut chunk = Chunk::new(pos);
@@ -50,20 +89,20 @@ impl ChunkManager {
 
         self.chunk_loading_time += lapsed.as_micros();
 
-        self.mesh_neighbors(master, pos);
+        self.mesh_neighbors(pos);
     }
 
-    pub fn mesh_neighbors(&mut self, master: &mut Master, pos: ChunkPos) {
-        self.mesh_chunk(master, pos);
+    pub fn mesh_neighbors(&mut self, pos: ChunkPos) {
+        self.mesh_chunk(pos);
 
-        self.mesh_chunk(master, ChunkPos {x: pos.x + 1, ..pos});
-        self.mesh_chunk(master, ChunkPos {x: pos.x - 1, ..pos});
-        self.mesh_chunk(master, ChunkPos {z: pos.z + 1, ..pos});
-        self.mesh_chunk(master, ChunkPos {z: pos.z - 1, ..pos});
+        self.mesh_chunk(ChunkPos {x: pos.x + 1, ..pos});
+        self.mesh_chunk(ChunkPos {x: pos.x - 1, ..pos});
+        self.mesh_chunk(ChunkPos {z: pos.z + 1, ..pos});
+        self.mesh_chunk(ChunkPos {z: pos.z - 1, ..pos});
     }
 
-    /// Mesh a single chunk. Panics if pos is not loaded
-    pub fn mesh_chunk(&mut self, master: &mut Master, pos: ChunkPos) {
+    /// Mesh a single chunk. Does nothing if pos is not loaded
+    pub fn mesh_chunk(&mut self, pos: ChunkPos) {
         
         let c = &self.loaded_chunks.get(&pos);
         if !c.is_none() {
@@ -73,9 +112,9 @@ impl ChunkManager {
             mesh.create_simple_mesh(c.unwrap(), &self);
             let elapsed = now.elapsed();
 
-            master.chunkpos_uniform.add(&master.queue, pos, pos.to_raw());
+            // self.chunkpos_uniform.add(&self.renderer.queue, pos, pos.to_raw());
             // Upload mesh to GPU
-            master.new_buffer(mesh.to_vertex_array(), pos);
+            // self.add_buffer(mesh, pos);
 
             self.chunks_meshes.insert(
                 pos, 
@@ -84,10 +123,9 @@ impl ChunkManager {
 
             self.chunk_meshing_time += elapsed.as_micros();
         }
-        
     }
 
-    pub fn center_around(&mut self, center: ChunkPos, master: &mut Master, map: &Map) {
+    pub fn center_around(&mut self, center: ChunkPos, map: &Map) {
         for x in -1 * self.render_distance as i32..(self.render_distance + 1) as i32 {
             for z in -1 * self.render_distance as i32..(self.render_distance + 1) as i32 {
                 // self.load_chunk(center + ChunkPos::new(x, 0, z), master, 10);
@@ -110,7 +148,7 @@ impl ChunkManager {
 
     /// Doesn't actually remove data from buffer at this point
     /// so chunks will still be rendered
-    pub fn unload_chunk(&mut self, pos: ChunkPos, master: &mut Master) {
+    pub fn unload_chunk(&mut self, pos: ChunkPos) {
         self.chunks_meshes.remove(&pos);
         self.loaded_chunks.remove(&pos);
     }

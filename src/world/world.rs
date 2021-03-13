@@ -1,9 +1,4 @@
 use std::collections::HashMap;
-use std::time::Instant;
-
-use crate::render::low::master::Master;
-use crate::render::meshing::chunkmeshing::ChunkMesh;
-use crate::world::chunk::pos::ChunkPos;
 
 use crate::world::{
     chunk::{
@@ -20,7 +15,7 @@ use crate::game::{
 };
 
 pub struct World {
-    pub chunk_manager: ChunkManager,
+    // pub chunk_manager: ChunkManager,
     pub seed: u32,
     pub player: Player,
 
@@ -29,13 +24,13 @@ pub struct World {
 
 impl World {
     pub fn new(seed: u32) -> Self {
-        let chunk_manager = ChunkManager::init(RENDER_DISTANCE as u32);
+        // let chunk_manager = ChunkManager::new(RENDER_DISTANCE as u32);
         let mut map = Map::new(seed);
 
         let player = Player::null_player();
 
         Self {
-            chunk_manager,
+            // chunk_manager,
             seed,
             map,
             player,

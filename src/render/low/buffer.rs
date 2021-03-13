@@ -1,6 +1,5 @@
 use wgpu;
 use wgpu::util::DeviceExt;
-use std::hash::Hash;
 
 /// A wrapper around the wgpu::Buffer.
 /// Holds multple objects.
@@ -106,6 +105,8 @@ impl<T: bytemuck::Pod + bytemuck::Zeroable> DynamicBuffer<T> {
             (self.len * std::mem::size_of::<T>()) as u64,
             (data.len() * std::mem::size_of::<T>()) as u64,
         );
+
+
 
         self.len += data.len();
     }

@@ -1,5 +1,4 @@
 use wgpu;
-use crate::render::low::vertex::Vertex;
 
 pub fn default_depth_texture(
     device: &wgpu::Device, 

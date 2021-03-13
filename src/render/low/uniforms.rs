@@ -11,7 +11,7 @@ pub struct MultiUniform<K: Hash + Eq + Copy, T: bytemuck::Pod + bytemuck::Zeroab
     pub buffer: wgpu::Buffer,
     pub uniform_bind_group_layout: wgpu::BindGroupLayout,
     pub uniform_bind_group: wgpu::BindGroup,
-    pub offset: HashMap<K, u32>,
+    pub offset: HashMap<K, u32>, // Array of offsets
 
     pub index: u32,
     pub binding: u32,

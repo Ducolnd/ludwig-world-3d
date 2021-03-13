@@ -1,9 +1,13 @@
 use crate::render::vertexarray::VertexArray;
 use crate::render::shapes::shapes::Quad;
 use crate::world::block::blocks::{BlockID, get_block, Sides};
-use crate::render::low::textures::TextureTile;
+use crate::render::{
+    low::{
+        renderer::Renderer,
+    },
+};
 
-// Used for creating the corresponding faces. These represent coordinates of the 4 vertices
+// Used for creating the corresponding faces. These represent coordinates of the 4 vertices in the correct order
 pub const FACES: [Face; 6] = [
     Face {interval: [[0, 1, 0], [1, 1, 0], [1, 0, 0], [0, 0, 0]]},
     Face {interval: [[1, 1, 0], [1, 1, 1], [1, 0, 1], [1, 0, 0]]},
