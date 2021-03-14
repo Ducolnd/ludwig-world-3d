@@ -1,16 +1,11 @@
-# ludwig-world-3d
+# Ludwig World 3D
 
-Ludwig World is an open world roguelike game. Procedually generated, infinite worlds in 3d space. Ludwig World used wgpu-rs as it's rendering backend 
+Ludwig is an open world survival / roguelike game. Procedually generated maps, extensive survival, interesting enemies and many items will all be part of Ludwig World in the future.
 
-## Installing
- 1. `git clone https://github.com/Ducolnd/ludwig-world`
- 2. Navigate to repository `cd ludwig-world`
- 3. run `cargo run`
- 4. Building could take a few minutes depeninding on your system
- 5. You can choose to set `opt-level` in cargo.toml for better performance, though this will mean compiling takes longer.
+##  Contributing
 
-## Contributing
 Contributing is welcome. A few things that need work:
+
 - World generation
 - Entites
 - UI elements (loading screen and such)
@@ -18,3 +13,13 @@ Contributing is welcome. A few things that need work:
 - Better wgpu-rs work
 - Textures
 - Lighting shaders and code
+
+## Installation
+
+Installing Ludwig World from source is fairly easy because of the convenient Rust compile ecosystem.
+
+1. `git clone` the repository <https://github.com/Ducolnd/ludwig-world-3d>
+2. Install Rust
+3. Install shaderc (<https://crates.io/crates/shaderc>) dependencies.
+3. Run `cargo run` and wait a few minutes
+4. Play
