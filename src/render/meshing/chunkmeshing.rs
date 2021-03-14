@@ -25,7 +25,8 @@ impl ChunkMesh {
     }
 
     #[allow(dead_code)]
-    /// Create mesh with every block representing 6 quads
+    /// Create mesh with every block representing 6 quads.
+    /// This is extremely inefficient and should only be used for testing
     pub fn create_dumb_mesh(&mut self, chunk: &Chunk) {
 
         let mut mesh = Mesh::new();

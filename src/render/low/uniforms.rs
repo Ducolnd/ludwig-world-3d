@@ -1,12 +1,9 @@
-use crate::render::camera::{CameraView, Projection, Camera};
 use wgpu::util::DeviceExt;
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use crate::render::low::buffer::DynamicBuffer;
-
 /// A Uniform Buffer that can store multple things of T.
-/// In the renderpass the offset should be set accordingly
+/// In the renderpass the offset should be set accordingly. K is the type for indexing, T the data.
 pub struct MultiUniform<K: Hash + Eq + Copy, T: bytemuck::Pod + bytemuck::Zeroable> {
     pub buffer: wgpu::Buffer,
     pub uniform_bind_group_layout: wgpu::BindGroupLayout,
