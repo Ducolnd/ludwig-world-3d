@@ -4,7 +4,6 @@ use winit::{
     dpi::PhysicalSize,
     window::Window,
 };
-use winit::event::{WindowEvent, KeyboardInput, ElementState};
 
 use std::any::TypeId;
 use std::collections::HashMap;
@@ -14,10 +13,12 @@ use crate::render::{
         init::default_depth_texture,
         vertex::Vertex,
         textures::TextureManager,
+        uniforms::{MultiUniform, ChunkPositionUniform},
     },
     camera::Camera,
-    drawables::{Drawable, texture_vertex::TextureVertex},
+    drawables::{Drawable, texture_vertex::TextureVertex, chunk::ChunkDrawable},
 };
+use crate::world::chunk::pos::ChunkPos;
 
 pub struct Renderer {
     // General gpu setup
@@ -30,10 +31,11 @@ pub struct Renderer {
 
     // Other
     pub camera: Camera,
+    pub textures: TextureManager,
+    pub chunkpos_uniform: MultiUniform<ChunkPos, ChunkPositionUniform>,
 
     // Used when rendering
     pub pipelines: HashMap<TypeId, wgpu::RenderPipeline>,
-    pub textures: TextureManager,
     pub depth_view: wgpu::TextureView,
 }
 
@@ -76,6 +78,9 @@ impl Renderer {
         let mut textures = TextureManager::new(&device);
         textures.load("/home/duco/development/rust/gamedev/luwdigengine2d/assets/terrain.png", &device, &queue);
 
+        let mut chunkpos_uniform = MultiUniform::new(&device, 3, 2);
+        chunkpos_uniform.add(&queue, ChunkPos::new(0, 0, 0), ChunkPos::new(0, 0, 0).to_raw());
+
         let mut t = Self {
             size,
             surface,
@@ -85,13 +90,15 @@ impl Renderer {
             device,
 
             camera,
+            textures: textures,
+            chunkpos_uniform,
 
             pipelines: HashMap::new(),
-            textures: textures,
             depth_view,
         };
 
         t.register_pipeline::<TextureVertex>();
+        t.register_pipeline::<ChunkDrawable>();
 
         t
     }
@@ -133,49 +140,39 @@ impl Renderer {
     pub fn render(
         &mut self,
         objs: Vec<&impl Drawable>,
-    ) -> Result<(), wgpu::SwapChainError> {
-
-        let frame = self.swap_chain.get_current_frame()?.output;
-
-        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("Render Encoder"),
+        encoder: &mut wgpu::CommandEncoder,
+        frame: &wgpu::SwapChainFrame,
+    ) {         
+        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("Render pass descriptor in renderer"),
+            color_attachments: &[
+                wgpu::RenderPassColorAttachmentDescriptor {
+                    attachment: &frame.output.view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color { // Clear color
+                            r: 0.1,
+                            g: 0.2,
+                            b: 0.3,
+                            a: 1.0,
+                        }),
+                        store: true,
+                    }
+                }
+            ],
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
+                attachment: &self.depth_view,
+                depth_ops: Some(wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(1.0),
+                    store: true,
+                }),
+                stencil_ops: None,
+            }),
         });
 
-        {   
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Render pass descriptor in renderer"),
-                color_attachments: &[
-                    wgpu::RenderPassColorAttachmentDescriptor {
-                        attachment: &frame.view,
-                        resolve_target: None,
-                        ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(wgpu::Color { // Clear color
-                                r: 0.1,
-                                g: 0.2,
-                                b: 0.3,
-                                a: 1.0,
-                            }),
-                            store: true,
-                        }
-                    }
-                ],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                    attachment: &self.depth_view,
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(1.0),
-                        store: true,
-                    }),
-                    stencil_ops: None,
-                }),
-            });
-
-            for obj in objs {
-                obj.draw(&mut render_pass, &self);
-            }   
-        }
-        self.queue.submit(vec![encoder.finish()]);
-
-        Ok(())
+        for obj in objs {
+            obj.draw(&mut render_pass, &self);
+        }          
     }
 
     pub fn get_pipeline<T: 'static + Drawable>(&self) -> &wgpu::RenderPipeline {

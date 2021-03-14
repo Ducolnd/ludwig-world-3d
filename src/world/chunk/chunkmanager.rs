@@ -27,37 +27,6 @@ pub struct ChunkManager {
     chunk_loading_time: u128,
 }
 
-// Implement the drawable trait so it can be rendered to the screen
-// impl Drawable for ChunkManager {
-//     fn create_pipeline(renderer: &mut Renderer) -> wgpu::RenderPipeline {
-//         renderer.default_pipeline(
-//             load_shader(String::from("low/shaders/shader.vert.spv")), 
-//             load_shader(String::from("low/shaders/shader.frag.spv")), 
-//             &[
-//                 &renderer.camera.uniform.uniform_bind_group_layout, // set = 0
-                
-//                 &renderer.textures.texture_bind_group_layout, // set =2
-//             ],
-//         )
-//     }
-    
-//     fn draw<'b>(&'b self, pass: &mut wgpu::RenderPass<'b>, renderer: &'b Renderer) {
-//         pass.set_pipeline(&renderer.get_pipeline::<ChunkManager>());
-//         pass.set_bind_group(renderer.camera.uniform.index, &renderer.camera.uniform.uniform_bind_group, &[]); // Camera
-//         pass.set_bind_group(2, renderer.textures.get_bind_group(), &[]); // Texture
-
-//         for pos in self.loaded_chunks.keys() {
-//             let a = self.chunkpos_uniform.offset.get(&pos).unwrap() * wgpu::BIND_BUFFER_ALIGNMENT as u32;
-//             pass.set_bind_group(self.chunkpos_uniform.index, &self.chunkpos_uniform.uniform_bind_group, &[a]); // Chunk Positions uniform changes with every chunk
-    
-//             pass.set_vertex_buffer(0, self.vertex_buffer.get(&pos).unwrap().get_buffer().slice(..));
-//             pass.set_index_buffer(self.index_buffer.get(&pos).unwrap().get_buffer().slice(..), wgpu::IndexFormat::Uint32);
-//             pass.draw_indexed(0..self.index_buffer.get(&pos).unwrap().len as u32, 0, 0..1);
-//         }
-
-//     }
-// }
-
 impl ChunkManager {
     pub fn new(render_distance: u32) -> Self {
         let loaded_chunks = HashMap::new();
@@ -147,7 +116,7 @@ impl ChunkManager {
     }
 
     /// Doesn't actually remove data from buffer at this point
-    /// so chunks will still be rendered
+    /// so chunks will still be rendered. ToDo implement this
     pub fn unload_chunk(&mut self, pos: ChunkPos) {
         self.chunks_meshes.remove(&pos);
         self.loaded_chunks.remove(&pos);
@@ -160,6 +129,10 @@ impl ChunkManager {
 
     pub fn get_chunk_option(&self, pos: ChunkPos) -> Option<&Chunk> {
         self.loaded_chunks.get(&pos)
+    }
+
+    pub fn get_mesh(&self, pos: ChunkPos) -> &ChunkMesh {
+        self.chunks_meshes.get(&pos).unwrap()
     }
 
     /// Get the block at the given coord. Returns an option

@@ -11,7 +11,7 @@ uniform Uniforms {
     mat4 u_view_proj; 
 };
 
-layout(set=1, binding=3) 
+layout(set=2, binding=3) 
 uniform ChunkUniform {
     vec3 chunkPosition; 
 };
@@ -27,6 +27,6 @@ void main() {
     y += chunkPosition.y;
     z += chunkPosition.z;
 
-    gl_Position = u_view_proj * vec4(vec3(x, y, z), 1.0);
+    gl_Position = u_view_proj * vec4(a_position, 1.0);
 }
  

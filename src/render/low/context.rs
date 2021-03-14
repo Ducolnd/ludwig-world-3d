@@ -9,9 +9,10 @@ use winit::{
 use futures::executor::block_on;
 
 use crate::render::low::renderer::Renderer;
-use crate::render::drawables::texture_vertex::TextureVertex;
+use crate::render::drawables::{texture_vertex::TextureVertex, chunk::ChunkDrawable};
 use crate::render::shapes::shapes::{Quad, quad_builder};
 use crate::render::vertexarray::VertexArray;
+use crate::world::chunk::{chunk::Chunk, chunkmanager::ChunkManager, pos::ChunkPos};
 
 pub struct Context {
     pub window: Window,
@@ -19,6 +20,8 @@ pub struct Context {
     pub renderer: Renderer,
 
     d: TextureVertex,
+    dd: ChunkDrawable,
+    manager: ChunkManager,
 }
 
 impl Context {
@@ -34,6 +37,11 @@ impl Context {
         let renderer = block_on(Renderer::new(&window));
 
         let d = TextureVertex::new(&renderer.device);
+        let dd = ChunkDrawable::new(&renderer.device, ChunkPos::new(0, 0, 0));
+
+        let mut manager = ChunkManager::new(1);
+        manager.load_chunk(ChunkPos::new(0, 0, 0), [10; 16*16]);
+
 
         Self {
             event_loop: Some(event_loop),
@@ -41,6 +49,8 @@ impl Context {
             renderer,
 
             d,
+            dd,
+            manager,
         }
     }
 
@@ -50,6 +60,7 @@ impl Context {
         let mut last_render_time = std::time::Instant::now();
         
         let mut updated = false;
+        let mut frame: Option<wgpu::SwapChainFrame> = None;
 
         self.event_loop.take().unwrap().run(move |event, _, control_flow| {        
             match event {
@@ -91,36 +102,47 @@ impl Context {
                     let dt = now - last_render_time;
                     last_render_time = now;
                     
-                    let mut encoder = self.renderer.start_frame();
-
                     self.renderer.update(dt);
+                                  
+                    
+                    match frame.take() {
+                        None => {
+                            match self.renderer.swap_chain.get_current_frame() { 
+                                Ok(swapchainframe) => {
+                                    frame = Some(swapchainframe);
+                                }
+                                // Recreate the swap_chain if lost
+                                Err(wgpu::SwapChainError::Lost) => self.renderer.resize(self.renderer.size),
+                                // The system is out of memory, we should probably quit
+                                Err(wgpu::SwapChainError::OutOfMemory) => *control_flow = ControlFlow::Exit,
+                                // All other errors (Outdated, Timeout) should be resolved by the next frame
+                                Err(e) => println!("{:?}", e),
+                            }
+                        }
+                        Some(swapchainframe) => {
+                            let mut encoder = self.renderer.start_frame();
+                            
+                            if !updated {
+                                updated = true;
 
-                    // println!("FPS: {}", 1.0 / dt.as_secs_f64());
+                                let mut data = VertexArray::<Quad>::new();
+                                data.push(quad_builder());
+                                self.d.from_vertex_array(&data, &self.renderer.device, &mut encoder);
 
-                    if !updated {
-                        updated = true;
+                                self.dd.from_chunk_mesh(self.manager.get_mesh(ChunkPos::new(0,0,0)), &self.renderer.device, &mut encoder);
+                                
+                                println!("updated sh it:");
+                            }
 
-                        let mut data = VertexArray::<Quad>::new();
-                        data.push(quad_builder());
-                        self.d.from_vertex_array(&data, &self.renderer.device, &mut encoder);
+                            self.renderer.render(
+                                vec![&self.dd],
+                                &mut encoder,
+                                &swapchainframe,
+                            );
 
-                        println!("updated sh it:");
+                            self.renderer.end_frame(encoder);
+                        }
                     }
-
-                    match self.renderer.render(
-                        vec![&self.d],
-
-                    ) { // Render
-                        Ok(_) => {}
-                        // Recreate the swap_chain if lost
-                        Err(wgpu::SwapChainError::Lost) => self.renderer.resize(self.renderer.size),
-                        // The system is out of memory, we should probably quit
-                        Err(wgpu::SwapChainError::OutOfMemory) => *control_flow = ControlFlow::Exit,
-                        // All other errors (Outdated, Timeout) should be resolved by the next frame
-                        Err(e) => eprintln!("{:?}", e),
-                    }
-
-                    self.renderer.end_frame(encoder);
                 }
                 Event::MainEventsCleared => {
                     self.window.request_redraw();
