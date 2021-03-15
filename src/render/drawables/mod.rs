@@ -8,6 +8,8 @@ use crate::render::low::renderer::Renderer;
 pub trait Drawable {
     /// Initialize all related things such as a uniform buffer specific for the Drawable
     /// and the renderpipeline.
-    fn create_pipeline(renderer: &Renderer) -> RenderPipeline;
+    fn create_pipeline(renderer: &Renderer) -> RenderPipeline
+        where Self: Sized;
+        
     fn draw<'a>(&'a self, pass: &mut RenderPass<'a>, renderer: &'a Renderer);
 }

@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::time::Instant;
-use std::any::TypeId;
 
 use crate::world::chunk::{chunk::Chunk, pos::*};
 use crate::world::map::Map;
@@ -9,9 +8,6 @@ use crate::world::block::blocks::BlockID;
 use crate::render::{
     low::{
         renderer::Renderer,
-        uniforms::{MultiUniform, ChunkPositionUniform},
-        buffer::DynamicBuffer,
-        vertex,
     },
     meshing::chunkmeshing::ChunkMesh,
 };
@@ -42,10 +38,10 @@ impl ChunkManager {
         }
     }
 
-    pub fn load_chunk(&mut self, pos: ChunkPos, height: [u32; CHUNKSIZE * CHUNKSIZE]) {
-        println!("loading chunk at : {:?}", pos);
-
+    pub fn load_chunk(&mut self, pos: ChunkPos, height: [u32; CHUNKSIZE * CHUNKSIZE], renderer: &mut Renderer) {
         let mut chunk = Chunk::new(pos);
+
+        renderer.chunkpos_uniform.add(&renderer.queue, pos, pos.to_raw());
 
         let now = Instant::now();
         chunk.generate(height);
@@ -55,7 +51,6 @@ impl ChunkManager {
             pos,
             chunk,
         );
-
         self.chunk_loading_time += lapsed.as_micros();
 
         self.mesh_neighbors(pos);
@@ -80,10 +75,6 @@ impl ChunkManager {
             let now = Instant::now();
             mesh.create_simple_mesh(c.unwrap(), &self);
             let elapsed = now.elapsed();
-
-            // self.chunkpos_uniform.add(&self.renderer.queue, pos, pos.to_raw());
-            // Upload mesh to GPU
-            // self.add_buffer(mesh, pos);
 
             self.chunks_meshes.insert(
                 pos, 

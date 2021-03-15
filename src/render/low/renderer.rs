@@ -78,8 +78,7 @@ impl Renderer {
         let mut textures = TextureManager::new(&device);
         textures.load("/home/duco/development/rust/gamedev/luwdigengine2d/assets/terrain.png", &device, &queue);
 
-        let mut chunkpos_uniform = MultiUniform::new(&device, 3, 2);
-        chunkpos_uniform.add(&queue, ChunkPos::new(0, 0, 0), ChunkPos::new(0, 0, 0).to_raw());
+        let chunkpos_uniform = MultiUniform::new(&device, 3, 2);
 
         let mut t = Self {
             size,
@@ -120,29 +119,12 @@ impl Renderer {
         println!("New screensize: {}x{}", new_size.width, new_size.height);
     }
 
-    pub fn update(&mut self, dt: std::time::Duration) {
-        self.camera.controller.update_camera(&mut self.camera.view, dt);
-        self.camera.update(&self.queue);
-    }
-
-    pub fn input(&mut self, event: &DeviceEvent) -> bool {
-        self.camera.input(event)
-    }
-
-    pub fn start_frame(&self) -> wgpu::CommandEncoder {
-        self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default())
-    }
-
-    pub fn end_frame(&self, encoder: wgpu::CommandEncoder) {
-        self.queue.submit(vec![encoder.finish()]);
-    }
-
     pub fn render(
         &mut self,
-        objs: Vec<&impl Drawable>,
+        objs: Vec<&dyn Drawable>,
         encoder: &mut wgpu::CommandEncoder,
         frame: &wgpu::SwapChainFrame,
-    ) {         
+    ) {        
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Render pass descriptor in renderer"),
             color_attachments: &[
@@ -174,17 +156,13 @@ impl Renderer {
             obj.draw(&mut render_pass, &self);
         }          
     }
-
-    pub fn get_pipeline<T: 'static + Drawable>(&self) -> &wgpu::RenderPipeline {
-        &self
-            .pipelines
-            .get(&std::any::TypeId::of::<T>())
-            .expect("Pipeline was not registered in context")
+    pub fn update(&mut self, dt: std::time::Duration) {
+        self.camera.controller.update_camera(&mut self.camera.view, dt);
+        self.camera.update(&self.queue);
     }
 
-    pub fn register_pipeline<T: 'static + Drawable>(&mut self) {
-        self.pipelines
-            .insert(std::any::TypeId::of::<T>(), T::create_pipeline(self));
+    pub fn input(&mut self, event: &DeviceEvent) -> bool {
+        self.camera.input(event)
     }
 
     pub fn default_pipeline(
@@ -240,5 +218,28 @@ impl Renderer {
                 clamp_depth: false,
             }),
         })
+    }
+}
+
+// Helper functions
+impl Renderer {
+    pub fn start_frame(&self) -> wgpu::CommandEncoder {
+        self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default())
+    }
+
+    pub fn end_frame(&self, encoder: wgpu::CommandEncoder) {
+        self.queue.submit(vec![encoder.finish()]);
+    }
+
+    pub fn get_pipeline<T: 'static + Drawable>(&self) -> &wgpu::RenderPipeline {
+        &self
+            .pipelines
+            .get(&std::any::TypeId::of::<T>())
+            .expect("Pipeline was not registered in context")
+    }
+
+    pub fn register_pipeline<T: 'static + Drawable>(&mut self) {
+        self.pipelines
+            .insert(std::any::TypeId::of::<T>(), T::create_pipeline(self));
     }
 }

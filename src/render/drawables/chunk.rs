@@ -69,9 +69,11 @@ impl Drawable for ChunkDrawable {
         pass.set_bind_group(renderer.camera.uniform.index, &renderer.camera.uniform.uniform_bind_group, &[]); // Camera
         pass.set_bind_group(1, renderer.textures.get_bind_group(), &[]); // Texture
         
-        let a = *renderer.chunkpos_uniform.offset.get(&self.pos).unwrap() * wgpu::BIND_BUFFER_ALIGNMENT as u32;
+        // Set correct chunkpos uniform
+        let a = renderer.chunkpos_uniform.offset.get(&self.pos).unwrap() * wgpu::BIND_BUFFER_ALIGNMENT as u32;
         pass.set_bind_group(renderer.chunkpos_uniform.index, &renderer.chunkpos_uniform.uniform_bind_group, &[a]);
 
+        // Draw
         pass.set_vertex_buffer(0, self.vertex_buffer.get_buffer().slice(..));
         pass.set_index_buffer(self.index_buffer.get_buffer().slice(..), wgpu::IndexFormat::Uint32);
         pass.draw_indexed(0..self.index_buffer.len as u32, 0, 0..1);

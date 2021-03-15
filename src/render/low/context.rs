@@ -8,11 +8,15 @@ use winit::{
 };
 use futures::executor::block_on;
 
-use crate::render::low::renderer::Renderer;
-use crate::render::drawables::{texture_vertex::TextureVertex, chunk::ChunkDrawable};
-use crate::render::shapes::shapes::{Quad, quad_builder};
-use crate::render::vertexarray::VertexArray;
-use crate::world::chunk::{chunk::Chunk, chunkmanager::ChunkManager, pos::ChunkPos};
+use crate::render::{
+    low::renderer::Renderer,
+    drawables::{texture_vertex::TextureVertex, chunk::ChunkDrawable},
+    shapes::shapes::{Quad, quad_builder},
+    vertexarray::VertexArray,
+    drawables::Drawable,
+};
+use crate::world::chunk::{chunkmanager::ChunkManager, pos::ChunkPos};
+use crate::game::state::State;
 
 pub struct Context {
     pub window: Window,
@@ -34,13 +38,13 @@ impl Context {
             .build(&event_loop)
             .unwrap();
 
-        let renderer = block_on(Renderer::new(&window));
+        let mut renderer = block_on(Renderer::new(&window));
 
         let d = TextureVertex::new(&renderer.device);
         let dd = ChunkDrawable::new(&renderer.device, ChunkPos::new(0, 0, 0));
 
         let mut manager = ChunkManager::new(1);
-        manager.load_chunk(ChunkPos::new(0, 0, 0), [10; 16*16]);
+        manager.load_chunk(ChunkPos::new(0, 0, 0), [10; 16*16], &mut renderer);
 
 
         Self {
@@ -54,9 +58,7 @@ impl Context {
         }
     }
 
-    pub fn run(mut self) {
-
-        
+    pub fn run<T: State + 'static>(mut self, mut state: T) {
         let mut last_render_time = std::time::Instant::now();
         
         let mut updated = false;
@@ -122,20 +124,10 @@ impl Context {
                         Some(swapchainframe) => {
                             let mut encoder = self.renderer.start_frame();
                             
-                            if !updated {
-                                updated = true;
-
-                                let mut data = VertexArray::<Quad>::new();
-                                data.push(quad_builder());
-                                self.d.from_vertex_array(&data, &self.renderer.device, &mut encoder);
-
-                                self.dd.from_chunk_mesh(self.manager.get_mesh(ChunkPos::new(0,0,0)), &self.renderer.device, &mut encoder);
-                                
-                                println!("updated sh it:");
-                            }
+                            state.update(&self, &mut encoder);
 
                             self.renderer.render(
-                                vec![&self.dd],
+                                state.draw(&self.renderer),
                                 &mut encoder,
                                 &swapchainframe,
                             );

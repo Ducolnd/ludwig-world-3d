@@ -6,7 +6,6 @@ use crate::world::{
         pos,
         chunkmanager::ChunkManager,
     },
-    constants::RENDER_DISTANCE,
     map::Map,
 };
 
