@@ -1,15 +1,13 @@
-use std::collections::HashMap;
-
 use super::State;
 use crate::render::{
     low::{
         renderer::Renderer,
         context::Context,
     },
-    drawables::{Drawable, chunk::ChunkDrawable},
+    drawables::{Drawable},
 };
 use crate::world::{
-    chunk::{chunkmanager::ChunkManager, pos::{ChunkPos, WorldCoord}},
+    chunk::{chunkmanager::ChunkManager, pos::{WorldCoord}},
     world::World,
 };
 
@@ -45,5 +43,7 @@ impl State for MainState {
     fn update(&mut self, context: &mut Context, encoder: &mut wgpu::CommandEncoder) {
         self.chm.load_queue(&self.world, &mut context.renderer);
         self.chm.update(context, encoder);
+
+        self.chm.set_camera_location(WorldCoord {x: -17, y: 0, z: 0});
     }
 }

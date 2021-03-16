@@ -52,7 +52,10 @@ impl ChunkManager {
     pub fn set_camera_location(&mut self, coord: WorldCoord) {
         let chunkpos = coord.to_chunk_coord();
 
+        // If center chunk is not yet loaded
         if !self.loaded_chunks.contains_key(&chunkpos) {
+            println!("A new chunk is the center");
+            self.updated = false;
             self.unload_chunk();
             self.queue_chunk_load(chunkpos);
         }
@@ -124,11 +127,13 @@ impl ChunkManager {
 
     /// Load and mesh all chunks in queue
     pub fn load_queue(&mut self, world: &World, renderer: &mut Renderer) {
-        for pos in self.load_queue.clone() {
-            self.load_chunk(pos.clone(), world.map.create_heightmap(&pos), renderer);
+        if self.load_queue.len() > 0 {
+            for pos in self.load_queue.clone() {
+                self.load_chunk(pos.clone(), world.map.create_heightmap(&pos), renderer);
+            }
+    
+            self.load_queue.clear();
         }
-
-        self.load_queue.clear();
     }
 
     /// Doesn't actually remove data from buffer at this point
@@ -136,6 +141,7 @@ impl ChunkManager {
     pub fn unload_chunk(&mut self) {
         self.chunks_meshes.clear();
         self.loaded_chunks.clear();
+        self.chunk_buffers.clear();
     }
 
     /// A low level function that updates the buffers according to the meshes for rendering
