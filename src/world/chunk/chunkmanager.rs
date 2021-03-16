@@ -1,23 +1,30 @@
 use std::collections::HashMap;
 use std::time::Instant;
 
-use crate::world::chunk::{chunk::Chunk, pos::*};
-use crate::world::map::Map;
-use crate::world::constants::*;
-use crate::world::block::blocks::BlockID;
+use crate::world::{
+    chunk::{chunk::Chunk, pos::*},
+    constants::*,
+    block::blocks::BlockID,
+    world::World,
+};
 use crate::render::{
     low::{
         renderer::Renderer,
+        context::Context,
     },
     meshing::chunkmeshing::ChunkMesh,
+    drawables::chunk::ChunkDrawable,
 };
 
 /// Takes care of loading chunks, meshing chunks, unloading chunks
 pub struct ChunkManager {
-    pub loaded_chunks: HashMap<ChunkPos, Chunk>,
-    pub chunks_meshes: HashMap<ChunkPos, ChunkMesh>,
+    loaded_chunks: HashMap<ChunkPos, Chunk>,
+    chunks_meshes: HashMap<ChunkPos, ChunkMesh>,
+    /// The buffers used for rendering
+    pub chunk_buffers: HashMap<ChunkPos, ChunkDrawable>,
+    load_queue: Vec<ChunkPos>,
 
-    pub render_distance: u32,
+    updated: bool,
 
     chunk_meshing_time: u128,
     chunk_loading_time: u128,
@@ -27,17 +34,31 @@ impl ChunkManager {
     pub fn new(render_distance: u32) -> Self {
         let loaded_chunks = HashMap::new();
         let chunks_meshes = HashMap::new();
+        let chunk_buffers = HashMap::new();
 
         Self {
             loaded_chunks,
             chunks_meshes,
+            chunk_buffers,
+            load_queue: vec![],
 
-            render_distance,
+            updated: false,
+
             chunk_meshing_time: 1,
             chunk_loading_time: 1,
         }
     }
 
+    pub fn set_camera_location(&mut self, coord: WorldCoord) {
+        let chunkpos = coord.to_chunk_coord();
+
+        if !self.loaded_chunks.contains_key(&chunkpos) {
+            self.unload_chunk();
+            self.queue_chunk_load(chunkpos);
+        }
+    }
+
+    /// Loads and meshes a single chunks
     pub fn load_chunk(&mut self, pos: ChunkPos, height: [u32; CHUNKSIZE * CHUNKSIZE], renderer: &mut Renderer) {
         let mut chunk = Chunk::new(pos);
 
@@ -85,16 +106,6 @@ impl ChunkManager {
         }
     }
 
-    pub fn center_around(&mut self, center: ChunkPos, map: &Map) {
-        for x in -1 * self.render_distance as i32..(self.render_distance + 1) as i32 {
-            for z in -1 * self.render_distance as i32..(self.render_distance + 1) as i32 {
-                // self.load_chunk(center + ChunkPos::new(x, 0, z), master, 10);
-            }
-        }
-
-        println!("Loaded {} chunks", self.loaded_chunks.len());
-    }
-
     /// Returns chunks around a given chunk in this order:
     /// [U, R, D, L]
     pub fn get_neighbors(&self, center: ChunkPos) -> [Option<&Chunk>; 4]{
@@ -106,11 +117,38 @@ impl ChunkManager {
         ]
     }
 
+    // Queue a chunk for loading
+    pub fn queue_chunk_load(&mut self, pos: ChunkPos) {
+        self.load_queue.push(pos);
+    }
+
+    /// Load and mesh all chunks in queue
+    pub fn load_queue(&mut self, world: &World, renderer: &mut Renderer) {
+        for pos in self.load_queue.clone() {
+            self.load_chunk(pos.clone(), world.map.create_heightmap(&pos), renderer);
+        }
+
+        self.load_queue.clear();
+    }
+
     /// Doesn't actually remove data from buffer at this point
     /// so chunks will still be rendered. ToDo implement this
-    pub fn unload_chunk(&mut self, pos: ChunkPos) {
-        self.chunks_meshes.remove(&pos);
-        self.loaded_chunks.remove(&pos);
+    pub fn unload_chunk(&mut self) {
+        self.chunks_meshes.clear();
+        self.loaded_chunks.clear();
+    }
+
+    /// A low level function that updates the buffers according to the meshes for rendering
+    pub fn update(&mut self, context: &mut Context, encoder: &mut wgpu::CommandEncoder) {
+        if !self.updated {
+            self.updated = true;
+            for (pos, chunk) in &self.chunks_meshes {
+                let mut c = ChunkDrawable::new(&context.renderer.device, *pos);
+                c.from_chunk_mesh(&chunk, &context.renderer.device, encoder);
+
+                self.chunk_buffers.insert(*pos, c);
+            }
+        }
     }
 
     /// Panics if pos is not loaded

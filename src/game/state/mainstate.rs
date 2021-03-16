@@ -9,51 +9,41 @@ use crate::render::{
     drawables::{Drawable, chunk::ChunkDrawable},
 };
 use crate::world::{
-    chunk::{chunkmanager::ChunkManager, pos::ChunkPos},
+    chunk::{chunkmanager::ChunkManager, pos::{ChunkPos, WorldCoord}},
+    world::World,
 };
 
 pub struct MainState {
     chm:  ChunkManager,
-    chunks: HashMap<ChunkPos, ChunkDrawable>,
-
-    loaded: bool, 
+    world: World,
 }
 
 impl State for MainState {
     fn new(renderer: &mut Renderer) -> Self {
         let mut chm = ChunkManager::new(2);
+        let world = World::new(69);
 
-        let pos = ChunkPos::new(0, 0, 0);
-        chm.load_chunk(pos, [4; 16*16], renderer);
-        chm.load_chunk(ChunkPos::new(1, 0, 0), [3; 16*16], renderer);
-
-        let chunks = HashMap::new();
+        chm.set_camera_location(WorldCoord {x: -1, y: 0, z: 0});
         
         Self {
             chm,
-            chunks,
-            loaded: false,
+            world,
         }
     }
 
     fn draw(&self, renderer: &Renderer) -> Vec<&dyn Drawable> {
         let mut objs = Vec::<&dyn Drawable>::new();
 
-        for (_, chunk) in &self.chunks {
+        // Draw all chunks
+        for (_, chunk) in &self.chm.chunk_buffers {
             objs.push(chunk);
         }
 
         objs
     }
 
-    fn update(&mut self, context: &Context, encoder: &mut wgpu::CommandEncoder) {
-        if !self.loaded {
-            for (pos, chunk) in &self.chm.chunks_meshes {
-                let mut c = ChunkDrawable::new(&context.renderer.device, *pos);
-                c.from_chunk_mesh(&chunk, &context.renderer.device, encoder);
-
-                self.chunks.insert(*pos, c);
-            }
-        }
+    fn update(&mut self, context: &mut Context, encoder: &mut wgpu::CommandEncoder) {
+        self.chm.load_queue(&self.world, &mut context.renderer);
+        self.chm.update(context, encoder);
     }
 }

@@ -1,4 +1,4 @@
-use crate::world::constants::{WORLD_WIDTH, WORLD_HEIGHT, *};
+use crate::world::constants::{*};
 use crate::world::chunk::pos::ChunkPos;
 use crate::helper::noise::NoiseGenerator;
 
@@ -18,7 +18,7 @@ impl Map {
         }
     }
 
-    pub fn create_heightmap(&mut self, chunk: ChunkPos) -> [u32; CHUNKSIZE * CHUNKSIZE] {
+    pub fn create_heightmap(&self, chunk: &ChunkPos) -> [u32; CHUNKSIZE * CHUNKSIZE] {
         let mut heights = [0; CHUNKSIZE * CHUNKSIZE];
 
         for x in 0..CHUNKSIZE {

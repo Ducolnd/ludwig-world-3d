@@ -1,12 +1,10 @@
-use std::collections::HashMap;
-
 use crate::world::{
     chunk::{
         chunk::Chunk,
         pos,
-        chunkmanager::ChunkManager,
     },
     map::Map,
+    constants::*,
 };
 
 use crate::game::{
@@ -18,7 +16,7 @@ pub struct World {
     pub seed: u32,
     pub player: Player,
 
-    map: Map,
+    pub map: Map,
 }
 
 impl World {
@@ -45,9 +43,5 @@ impl World {
         // self.load_chunk(ChunkPos {x: pos.x + 3, ..pos}, master);
         // self.load_chunk(ChunkPos {z: pos.z + 1, ..pos}, master);
         // self.load_chunk(ChunkPos {z: pos.z - 1, ..pos}, master);
-    }
-
-    pub fn update_chunks(&mut self) {
-        
     }
 }

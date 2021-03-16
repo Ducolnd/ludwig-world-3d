@@ -124,7 +124,7 @@ impl Context {
                         Some(swapchainframe) => {
                             let mut encoder = self.renderer.start_frame();
                             
-                            state.update(&self, &mut encoder);
+                            state.update(&mut self, &mut encoder);
 
                             self.renderer.render(
                                 state.draw(&self.renderer),
