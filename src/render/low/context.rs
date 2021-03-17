@@ -10,12 +10,7 @@ use futures::executor::block_on;
 
 use crate::render::{
     low::renderer::Renderer,
-    drawables::{texture_vertex::TextureVertex, chunk::ChunkDrawable},
-    shapes::shapes::{Quad, quad_builder},
-    vertexarray::VertexArray,
-    drawables::Drawable,
 };
-use crate::world::chunk::{chunkmanager::ChunkManager, pos::ChunkPos};
 use crate::game::state::State;
 
 pub struct Context {
@@ -23,9 +18,6 @@ pub struct Context {
     pub event_loop: Option<EventLoop<()>>,
     pub renderer: Renderer,
 
-    d: TextureVertex,
-    dd: ChunkDrawable,
-    manager: ChunkManager,
 }
 
 impl Context {
@@ -38,30 +30,18 @@ impl Context {
             .build(&event_loop)
             .unwrap();
 
-        let mut renderer = block_on(Renderer::new(&window));
-
-        let d = TextureVertex::new(&renderer.device);
-        let dd = ChunkDrawable::new(&renderer.device, ChunkPos::new(0, 0, 0));
-
-        let mut manager = ChunkManager::new(1);
-        manager.load_chunk(ChunkPos::new(0, 0, 0), [10; 16*16], &mut renderer);
-
+        let renderer = block_on(Renderer::new(&window));
 
         Self {
             event_loop: Some(event_loop),
             window,
             renderer,
-
-            d,
-            dd,
-            manager,
         }
     }
 
     pub fn run<T: State + 'static>(mut self, mut state: T) {
         let mut last_render_time = std::time::Instant::now();
         
-        let mut updated = false;
         let mut frame: Option<wgpu::SwapChainFrame> = None;
 
         self.event_loop.take().unwrap().run(move |event, _, control_flow| {        
@@ -127,7 +107,7 @@ impl Context {
                             state.update(&mut self, &mut encoder);
 
                             self.renderer.render(
-                                state.draw(&self.renderer),
+                                state.draw(),
                                 &mut encoder,
                                 &swapchainframe,
                             );

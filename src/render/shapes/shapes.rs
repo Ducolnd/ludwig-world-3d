@@ -1,19 +1,5 @@
 use crate::render::shapes::shape::Shape;
 use crate::render::low::vertex::Vertex;
-use crate::render::low::textures::TextureTile;
-
-pub fn quad_builder() -> Quad {
-    let tile = TextureTile::new(0, 0);
-    Quad {
-        coords: [
-            [1.0, 1.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [0.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0],
-        ],
-        text_coords: tile.to_usable(),
-    }
-}
 
 pub struct Quad {
     pub coords: [[f32; 3]; 4],

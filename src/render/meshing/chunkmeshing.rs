@@ -7,7 +7,7 @@ use crate::world::{
     chunk::chunk::{Chunk, index_to_coord},
     chunk::chunkmanager::ChunkManager,
     constants::*,
-    block::blocks::{get_block, BlockID, Blocks, Block, Sides},
+    block::blocks::{get_block, BlockID, Blocks, Sides},
     chunk::pos::*,
 };
 

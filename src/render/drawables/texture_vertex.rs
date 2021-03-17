@@ -16,6 +16,7 @@ pub struct TextureVertex {
 }
 
 impl TextureVertex {
+    #[allow(dead_code)]    
     pub fn new(device: &wgpu::Device) -> Self {
         let vertex_buffer = DynamicBuffer::new(
             8000,
@@ -35,6 +36,7 @@ impl TextureVertex {
         }
     }
 
+    #[allow(dead_code)]
     pub fn from_vertex_array<T: Shape>(&mut self, vertex_array: &VertexArray<T>, device: &wgpu::Device, encoder: &mut wgpu::CommandEncoder) {
         self.vertex_buffer.insert_back(
             device, 

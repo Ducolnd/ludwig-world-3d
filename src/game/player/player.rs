@@ -5,12 +5,6 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new(at: Point3<f32>) -> Self {
-        Self {
-            position: at,
-        }
-    }
-
     pub fn null_player() -> Self {
         Self {
             position: (0.0, 0.0, 0.0).into(),

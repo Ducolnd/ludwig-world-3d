@@ -1,11 +1,9 @@
 use super::State;
 use crate::render::{
     low::{
-        renderer::Renderer,
         context::Context,
     },
     drawables::{Drawable},
-    camera::Camera,
 };
 use crate::world::{
     chunk::{chunkmanager::ChunkManager, pos::{WorldCoord}},
@@ -18,7 +16,7 @@ pub struct MainState {
 }
 
 impl State for MainState {
-    fn new(renderer: &mut Renderer) -> Self {
+    fn new() -> Self {
         let mut chm = ChunkManager::new(2);
         let world = World::new(69);
 
@@ -30,7 +28,7 @@ impl State for MainState {
         }
     }
 
-    fn draw(&self, renderer: &Renderer) -> Vec<&dyn Drawable> {
+    fn draw(&self) -> Vec<&dyn Drawable> {
         let mut objs = Vec::<&dyn Drawable>::new();
 
         // Draw all chunks

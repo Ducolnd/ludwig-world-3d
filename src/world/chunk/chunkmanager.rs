@@ -133,6 +133,7 @@ impl ChunkManager {
     
             self.load_queue.clear();
         }
+        println!("Chunk meshing time: {}, chunk loading time: {}", self.meshing_time(), self.loading_time());
     }
 
     /// Doesn't actually remove data from buffer at this point

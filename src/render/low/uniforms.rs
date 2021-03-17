@@ -89,6 +89,7 @@ impl<K: Hash + Eq + Copy, T: bytemuck::Pod + bytemuck::Zeroable> MultiUniform<K,
         self.size += 1;
     }
 
+    #[allow(dead_code)]
     pub fn modify(&mut self, queue: &wgpu::Queue, at: K, data: T) {
         let offset = self.offset.get(&at).unwrap();
 
