@@ -18,13 +18,13 @@ pub struct ChunkDrawable {
 impl ChunkDrawable {
     pub fn new(device: &wgpu::Device, pos: ChunkPos) -> Self {
         let vertex_buffer = DynamicBuffer::new(
-            8000,
+            16000,
             device,
             wgpu::BufferUsage::VERTEX,
         );
 
         let index_buffer = DynamicBuffer::new(
-            8000,
+            16000,
             device,
             wgpu::BufferUsage::INDEX,
         );

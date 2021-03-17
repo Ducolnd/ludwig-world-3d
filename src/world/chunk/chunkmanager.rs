@@ -54,7 +54,6 @@ impl ChunkManager {
 
         // If center chunk is not yet loaded
         if !self.loaded_chunks.contains_key(&chunkpos) {
-            println!("A new chunk is the center");
             self.updated = false;
             self.unload_chunk();
             self.queue_chunk_load(chunkpos);

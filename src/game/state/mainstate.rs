@@ -5,6 +5,7 @@ use crate::render::{
         context::Context,
     },
     drawables::{Drawable},
+    camera::Camera,
 };
 use crate::world::{
     chunk::{chunkmanager::ChunkManager, pos::{WorldCoord}},
@@ -44,6 +45,6 @@ impl State for MainState {
         self.chm.load_queue(&self.world, &mut context.renderer);
         self.chm.update(context, encoder);
 
-        self.chm.set_camera_location(WorldCoord {x: -17, y: 0, z: 0});
+        self.chm.set_camera_location(WorldCoord::from_point(context.renderer.camera.view.position));
     }
 }
