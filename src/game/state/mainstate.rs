@@ -2,6 +2,7 @@ use super::State;
 use crate::render::{
     low::{
         context::Context,
+        renderer::Renderer,
     },
     drawables::{Drawable},
 };
@@ -16,11 +17,11 @@ pub struct MainState {
 }
 
 impl State for MainState {
-    fn new() -> Self {
-        let mut chm = ChunkManager::new(2);
+    fn new(renderer: &mut Renderer) -> Self {
+        let mut chm = ChunkManager::new(3);
         let world = World::new(69);
 
-        chm.set_camera_location(WorldCoord {x: -1, y: 0, z: 0});
+        chm.set_camera_location(WorldCoord {x: -1, y: 0, z: 0}, renderer);
         
         Self {
             chm,
@@ -43,6 +44,6 @@ impl State for MainState {
         self.chm.load_queue(&self.world, &mut context.renderer);
         self.chm.update(context, encoder);
 
-        self.chm.set_camera_location(WorldCoord::from_point(context.renderer.camera.view.position));
+        self.chm.set_camera_location(WorldCoord::from_point(context.renderer.camera.view.position), &mut context.renderer);
     }
 }

@@ -24,6 +24,9 @@ pub struct ChunkManager {
     pub chunk_buffers: HashMap<ChunkPos, ChunkDrawable>,
     load_queue: Vec<ChunkPos>,
 
+    render_distance: u32,
+    center_chunk: ChunkPos,
+
     updated: bool,
 
     chunk_meshing_time: u128,
@@ -42,6 +45,9 @@ impl ChunkManager {
             chunk_buffers,
             load_queue: vec![],
 
+            render_distance,
+            center_chunk: ChunkPos::new(0, 0, 0),
+
             updated: false,
 
             chunk_meshing_time: 1,
@@ -49,15 +55,41 @@ impl ChunkManager {
         }
     }
 
-    pub fn set_camera_location(&mut self, coord: WorldCoord) {
+    pub fn set_camera_location(&mut self, coord: WorldCoord, renderer: &mut Renderer) {
         let chunkpos = coord.to_chunk_coord();
 
         // If center chunk is not yet loaded
-        if !self.loaded_chunks.contains_key(&chunkpos) {
+        if self.center_chunk != chunkpos {
+            self.center_around(chunkpos, renderer);
+            
             self.updated = false;
-            self.unload_chunk();
-            self.queue_chunk_load(chunkpos);
         }
+    }
+
+    pub fn center_around(&mut self, pos: ChunkPos, renderer: &mut Renderer) {
+        // The chunks we want to load
+        let mut targets = vec![];
+
+        for x in -1 * (self.render_distance as i32)..self.render_distance as i32 {
+            for z in -1 * (self.render_distance as i32)..self.render_distance as i32 {
+                targets.push(ChunkPos::new(pos.x + x, 0, pos.z + z));
+            }
+        }
+
+        // If a chunk should not be loaded we unload it
+        for pos in self.loaded_chunks.keys().cloned().collect::<Vec<_>>() {
+            if !targets.contains(&pos) {
+                self.unload_chunk(&pos, renderer);
+            }
+        }
+
+        // If a chunk is not yet loaded and it should be loaded, we load it
+        for pos in targets {
+            if !self.loaded_chunks.contains_key(&pos) {
+                self.queue_chunk_load(pos)
+            }
+        }
+
     }
 
     /// Loads and meshes a single chunks
@@ -133,15 +165,15 @@ impl ChunkManager {
     
             self.load_queue.clear();
         }
-        println!("Chunk meshing time: {}, chunk loading time: {}", self.meshing_time(), self.loading_time());
+        // println!("Chunk meshing time: {}, chunk loading time: {}", self.meshing_time(), self.loading_time());
     }
 
-    /// Doesn't actually remove data from buffer at this point
-    /// so chunks will still be rendered. ToDo implement this
-    pub fn unload_chunk(&mut self) {
-        self.chunks_meshes.clear();
-        self.loaded_chunks.clear();
-        self.chunk_buffers.clear();
+    pub fn unload_chunk(&mut self, pos: &ChunkPos, renderer: &mut Renderer) {
+        self.chunks_meshes.remove(pos);
+        self.loaded_chunks.remove(pos);
+        self.chunk_buffers.remove(pos);
+        
+        renderer.chunkpos_uniform.remove(pos);
     }
 
     /// A low level function that updates the buffers according to the meshes for rendering

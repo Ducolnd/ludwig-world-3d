@@ -9,11 +9,11 @@ pub struct MultiUniform<K: Hash + Eq + Copy, T: bytemuck::Pod + bytemuck::Zeroab
     pub uniform_bind_group_layout: wgpu::BindGroupLayout,
     pub uniform_bind_group: wgpu::BindGroup,
     pub offset: HashMap<K, u32>, // Array of offsets
+    open_spots: Vec<u32>,
 
     pub index: u32,
     pub binding: u32,
     
-    size: u32, // How many items of T
     phantom: std::marker::PhantomData<T>,
 }
 
@@ -68,27 +68,32 @@ impl<K: Hash + Eq + Copy, T: bytemuck::Pod + bytemuck::Zeroable> MultiUniform<K,
             uniform_bind_group,
             uniform_bind_group_layout,
             offset,
+            open_spots: (0..40).collect(),
 
             index,
             binding,
 
-            size: 0,
             phantom: std::marker::PhantomData,
         }
     }
 
     pub fn add(&mut self, queue: &wgpu::Queue, at: K, data: T) {
-        self.offset.insert(at, self.size);
+        self.offset.insert(at, self.open_spots[0]);
 
         queue.write_buffer(
             &self.buffer, 
-            self.size as u64 * wgpu::BIND_BUFFER_ALIGNMENT, // This goes with the assumption that T is never bigger than BIND_BUFFER_ALIGNMENT (256 bytes)
+            self.open_spots[0] as u64 * wgpu::BIND_BUFFER_ALIGNMENT, // This goes with the assumption that T is never bigger than BIND_BUFFER_ALIGNMENT (256 bytes)
             bytemuck::cast_slice(&[data])
         );
 
-        self.size += 1;
+        self.open_spots.remove(0);
     }
 
+    pub fn remove(&mut self, at: &K) {
+        self.open_spots.insert(0, *self.offset.get(at).unwrap());
+        self.offset.remove(at);
+    }
+    
     #[allow(dead_code)]
     pub fn modify(&mut self, queue: &wgpu::Queue, at: K, data: T) {
         let offset = self.offset.get(&at).unwrap();
