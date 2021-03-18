@@ -18,7 +18,7 @@ pub struct MainState {
 
 impl State for MainState {
     fn new(renderer: &mut Renderer) -> Self {
-        let mut chm = ChunkManager::new(3);
+        let mut chm = ChunkManager::new(5);
         let world = World::new(69);
 
         chm.set_camera_location(WorldCoord {x: -1, y: 0, z: 0}, renderer);

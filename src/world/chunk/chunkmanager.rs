@@ -70,6 +70,9 @@ impl ChunkManager {
         // The chunks we want to load
         let mut targets = vec![];
 
+        self.center_chunk = pos; 
+
+        // The chunks we want to have loaded
         for x in -1 * (self.render_distance as i32)..self.render_distance as i32 {
             for z in -1 * (self.render_distance as i32)..self.render_distance as i32 {
                 targets.push(ChunkPos::new(pos.x + x, 0, pos.z + z));

@@ -112,6 +112,8 @@ impl Context {
                                 &swapchainframe,
                             );
 
+                            // println!("FPS: {}", dt.as_secs_f64());
+
                             self.renderer.end_frame(encoder);
                         }
                     }

@@ -2,6 +2,8 @@ use wgpu::util::DeviceExt;
 use std::collections::HashMap;
 use std::hash::Hash;
 
+const UNIFORM_SIZE: usize = 200;
+
 /// A Uniform Buffer that can store multple things of T.
 /// In the renderpass the offset should be set accordingly. K is the type for indexing, T the data.
 pub struct MultiUniform<K: Hash + Eq + Copy, T: bytemuck::Pod + bytemuck::Zeroable> {
@@ -41,7 +43,7 @@ impl<K: Hash + Eq + Copy, T: bytemuck::Pod + bytemuck::Zeroable> MultiUniform<K,
 
         let buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Uniform Buffer"),
-            size: wgpu::BIND_BUFFER_ALIGNMENT * 40,
+            size: wgpu::BIND_BUFFER_ALIGNMENT * UNIFORM_SIZE as u64,
             usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
             mapped_at_creation: false,
         });
@@ -68,7 +70,7 @@ impl<K: Hash + Eq + Copy, T: bytemuck::Pod + bytemuck::Zeroable> MultiUniform<K,
             uniform_bind_group,
             uniform_bind_group_layout,
             offset,
-            open_spots: (0..40).collect(),
+            open_spots: (0..200).collect(),
 
             index,
             binding,
