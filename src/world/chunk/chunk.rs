@@ -30,10 +30,10 @@ impl Chunk {
         // self.blocks[coord_to_index(0, 0, 0)] = Blocks::GRASS as BlockID;
         // self.blocks[coord_to_index(0, 1, 0)] = Blocks::GRASS as BlockID;
 
-        for x in 0..(CHUNKSIZE) as u32 {
-            for z in 0..(CHUNKSIZE) as u32 {
+        for x in 0..(CHUNKSIZE) as i16 {
+            for z in 0..(CHUNKSIZE) as i16 {
 
-                let grassheight = height[x as usize + z as usize * CHUNKSIZE];
+                let grassheight = height[x as usize + z as usize * CHUNKSIZE] as i16;
                 let dirtheight = grassheight - rgn.gen_range(1..4);
                 let stoneheight = dirtheight;
 
@@ -62,13 +62,13 @@ impl Chunk {
             return 0
         }
         else {
-            return self.blocks[coord_to_index(coord.x as u32, coord.y as u32, coord.z as u32)]
+            return self.blocks[coord_to_index(coord.x, coord.y, coord.z)]
         }      
     }
 
     /// This will panic if x, y or z are not in bounds
     pub fn at_coord(&self, coord: ChunkCoord) -> BlockID {
-        self.blocks[coord_to_index(coord.x as u32, coord.y as u32, coord.z as u32)]   
+        self.blocks[coord_to_index(coord.x, coord.y, coord.z)]   
     }
 
     /// Returns true if the given coordinate is in the bounds
@@ -84,11 +84,15 @@ impl Chunk {
 
         true
     }
+
+    pub fn place_block(&mut self, pos: ChunkCoord, block: BlockID) {
+        self.blocks[coord_to_index(pos.x, pos.y, pos.z)] = block;
+    }
 }
 
 /// Y represents height, Z depth and X width
-pub fn coord_to_index(x: u32, y: u32, z: u32) -> usize {
-    (x + z * CHUNKSIZE as u32 + y * (CHUNKSIZE * CHUNKSIZE) as u32) as usize
+pub fn coord_to_index(x: i16, y: i16, z: i16) -> usize {
+    ((x + z * CHUNKSIZE as i16) as i32 + y as i32 * (CHUNKSIZE * CHUNKSIZE) as i32) as usize
 }
 
 pub fn index_to_coord(index: usize) -> (u32, u32, u32) {

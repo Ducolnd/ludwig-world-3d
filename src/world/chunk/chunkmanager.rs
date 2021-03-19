@@ -201,6 +201,10 @@ impl ChunkManager {
         self.loaded_chunks.get(&pos)
     }
 
+    pub fn get_chunk_mut_option(&mut self, pos: ChunkPos) -> Option<&mut Chunk> {
+        self.loaded_chunks.get_mut(&pos)
+    }
+
     pub fn get_mesh(&self, pos: ChunkPos) -> &ChunkMesh {
         self.chunks_meshes.get(&pos).unwrap()
     }
